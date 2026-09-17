@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  GRADLE_OPTS: -Dorg.gradle.daemon=true -Dorg.gradle.parallel=true -Dorg.gradle.caching=true -Dorg.gradle.configureondemand=true
+  GRADLE_OPTS: -Dorg.gradle.daemon=true -Dorg.gradle.parallel=true -Dorg.gradle.caching=true
 
 jobs:
   build:
@@ -35,9 +35,6 @@ jobs:
           flutter-version: '3.47.4'
           channel: stable
           cache: true
-
-      - name: Setup Gradle cache (biar build berikutnya cepat)
-        uses: gradle/actions/setup-gradle@v3
 
       - name: Tulis flutter.sdk ke local.properties (jamin includeBuild Gradle)
         run: |
