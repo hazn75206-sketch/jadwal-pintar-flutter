@@ -71,6 +71,14 @@ jobs:
       - name: Flutter pub get
         run: flutter pub get
 
+      - name: Bandingkan scaffold vs flutter create asli
+        run: |
+          flutter create --org com.probe --project-name probeapp /tmp/probeapp --platforms=android --no-pub
+          echo "===== settings diff"; diff -u /tmp/probeapp/android/settings.gradle.kts android/settings.gradle.kts || true
+          echo "===== gradle.properties diff"; diff -u /tmp/probeapp/android/gradle.properties android/gradle.properties || true
+          echo "===== root build diff"; diff -u /tmp/probeapp/android/build.gradle.kts android/build.gradle.kts || true
+          echo "===== wrapper diff"; diff -u /tmp/probeapp/android/gradle/wrapper/gradle-wrapper.properties android/gradle/wrapper/gradle-wrapper.properties || true
+
       - name: Analyze (gagal bila ada error Dart)
         run: flutter analyze
 
