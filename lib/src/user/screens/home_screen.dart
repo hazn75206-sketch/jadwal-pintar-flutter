@@ -74,14 +74,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void _scrollToToday() {
     if (_scrolledToday) return;
     _scrolledToday = true;
+    final today = _todayName();
+    final key = today.isEmpty ? null : _dayKeys[today];
     Future<void>.delayed(const Duration(milliseconds: 400), () {
       if (!mounted) return;
-      final today = _todayName();
-      final key = today.isEmpty ? null : _dayKeys[today];
-      final context = key?.currentContext;
-      if (context != null) {
+      final target = key?.currentContext;
+      if (target != null) {
         Scrollable.ensureVisible(
-          context,
+          target,
           duration: const Duration(milliseconds: 400),
           alignment: 0.3,
         );
@@ -315,8 +315,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 title: maintenance?.title ?? 'Aplikasi sedang diperbaiki',
                 message: maintenance?.message ?? '',
               ),
-            if (showUpdate && update != null)
-              _UpdateOverlay(update: update, downloader: _downloader),
+            if (showUpdate)
+              _UpdateOverlay(update: update!, downloader: _downloader),
           ],
         ),
       ),

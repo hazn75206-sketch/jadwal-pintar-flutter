@@ -143,7 +143,7 @@ Future<void> _alarmFired(int id, Map<String, dynamic>? params) async {
         exact: true,
         wakeup: true,
         rescheduleOnReboot: true,
-        params: params,
+        params: params ?? const <String, dynamic>{},
       );
     }
   } catch (_) {}

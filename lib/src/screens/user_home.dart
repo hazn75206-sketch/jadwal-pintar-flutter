@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../session.dart';
-import 'screens/home_screen.dart';
+import '../user/screens/home_screen.dart';
+import '../user/session.dart';
 
 /// Entrypoint UI flavor user — layar jadwal + gate sesi.
 class UserHomeScreen extends ConsumerWidget {
