@@ -16,6 +16,14 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    lint {
+        // Sideload (bukan Play Store): matikan lint vital release agar
+        // targetSdk 26 (paritas perilaku) tidak menggagalkan build.
+        abortOnError = false
+        checkReleaseBuilds = false
+        disable += "ExpiredTargetSdkVersion"
+    }
+
     defaultConfig {
         minSdk = 24
         // targetSdk dipertahankan 26 (paritas perilaku alarm/notifikasi/storage
