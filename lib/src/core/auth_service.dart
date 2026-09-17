@@ -21,8 +21,8 @@ class AuthService {
   /// GoogleSignInException bila dibatalkan/gagal.
   Future<User> signInWithGoogle() async {
     final account = await _google.authenticate();
-    final token = (await account.authentication).idToken;
-    if (token == null || token.isEmpty) {
+    final token = account.authentication.idToken;
+    if (token.isEmpty) {
       throw StateError('Google tidak memberikan ID token.');
     }
     final credential =

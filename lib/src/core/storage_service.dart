@@ -9,7 +9,7 @@ class StorageService {
 
   final FirebaseStorage _storage;
 
-  /// Mengunggah [file] ke `updates/<objectName>` pada [bucket] dan
+  /// Mengunggah [file] ke `updates/` + [objectName] pada [bucket] dan
   /// mengembalikan download URL. [onProgress] menerima 0.0–1.0 (null bila
   /// ukuran total tak diketahui).
   Future<String> uploadApk({
@@ -33,7 +33,7 @@ class StorageService {
     });
     try {
       await task;
-      return ref.getDownloadURL();
+      return await ref.getDownloadURL();
     } finally {
       await subscription.cancel();
     }
