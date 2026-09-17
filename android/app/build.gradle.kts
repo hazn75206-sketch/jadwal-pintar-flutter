@@ -7,7 +7,9 @@ plugins {
 
 android {
     namespace = "com.jadwalpintar"
-    compileSdk = 34
+    // compileSdk 36 = syarat plugin terbaru (file_picker); perilaku runtime
+    // tetap dikunci targetSdk 26.
+    compileSdk = 36
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
