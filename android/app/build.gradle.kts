@@ -1,0 +1,72 @@
+plugins {
+    id("com.android.application")
+    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
+}
+
+android {
+    namespace = "com.jadwalpintar"
+    compileSdk = 34
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        minSdk = 24
+        // targetSdk dipertahankan 26 (paritas perilaku alarm/notifikasi/storage
+        // dengan aplikasi native; bukan rilis Play Store).
+        targetSdk = 26
+        versionCode = 3
+        versionName = "3.0"
+    }
+
+    signingConfigs {
+        create("ci") {
+            val ksFile = System.getenv("KEYSTORE_FILE")
+            if (!ksFile.isNullOrEmpty()) {
+                storeFile = file(ksFile)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            val ksFile = System.getenv("KEYSTORE_FILE")
+            signingConfig = if (!ksFile.isNullOrEmpty()) {
+                signingConfigs.getByName("ci")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+        }
+    }
+
+    flavorDimensions += "app"
+    productFlavors {
+        create("user") {
+            dimension = "app"
+            applicationId = "com.jadwalpintar.app"
+            manifestPlaceholders["applicationLabel"] = "Jadwal Pintar"
+        }
+        create("admin") {
+            dimension = "app"
+            applicationId = "com.jadwalpintar.admin"
+            manifestPlaceholders["applicationLabel"] = "Admin Jadwal Pintar"
+        }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
+flutter {
+    source = "../.."
+}

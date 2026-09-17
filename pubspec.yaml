@@ -1,0 +1,30 @@
+name: jadwal_pintar
+description: Jadwal Pintar monorepo — flavors user + admin dalam satu codebase Flutter.
+publish_to: none
+version: 3.0.0+3
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^4.15.0
+  firebase_auth: ^6.7.0
+  firebase_database: ^12.6.0
+  firebase_storage: ^13.6.0
+  google_sign_in: ^7.2.0
+  device_info_plus: ^13.2.0
+  connectivity_plus: ^7.3.1
+  shared_preferences: ^2.5.5
+  audioplayers: ^6.8.1
+  file_picker: ^13.1.0
+  font_awesome_flutter: ^11.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
