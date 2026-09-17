@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../app.dart';
-import '../core/flavor.dart';
+import '../session.dart';
+import 'screens/home_screen.dart';
 
-/// Layar sementara flavor user (Fase 0: validasi pipeline).
-/// Diganti faithful-port UI jadwal pada Fase 3.
-class UserHomeScreen extends StatelessWidget {
+/// Entrypoint UI flavor user — layar jadwal + gate sesi.
+class UserHomeScreen extends ConsumerWidget {
   const UserHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Jadwal Pintar')),
-      body: const Center(
-        child: FirebaseStatusCard(flavor: AppFlavor.user),
-      ),
-    );
+  Widget build(BuildContext context, WidgetRef ref) {
+    // SessionController boot sendiri saat pertama di-watch.
+    ref.watch(sessionProvider);
+    return const HomeScreen();
   }
 }

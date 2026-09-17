@@ -1,19 +1,21 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'admin/theme.dart';
 import 'core/flavor.dart';
 import 'screens/admin_home.dart';
 import 'screens/user_home.dart';
+import 'user/user_theme_provider.dart';
 
 /// Root widget monorepo. Satu codebase, dua flavor via `--flavor` + `--target`.
-class JadwalPintarApp extends StatelessWidget {
+class JadwalPintarApp extends ConsumerWidget {
   const JadwalPintarApp({super.key, required this.flavor});
 
   final AppFlavor flavor;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (flavor == AppFlavor.admin) {
       return MaterialApp(
         title: flavor.title,
@@ -24,16 +26,11 @@ class JadwalPintarApp extends StatelessWidget {
         home: const AdminHomeScreen(),
       );
     }
+    final userTheme = ref.watch(userThemeProvider);
     return MaterialApp(
       title: flavor.title,
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF10B981),
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: userTheme.themeData,
       home: const UserHomeScreen(),
     );
   }
