@@ -28,7 +28,6 @@ migrate_working_dir/
 
 # Android related
 **/gen/
-gradle-wrapper.jar
 local.properties
 **/*.keystore
 **/*.jks
