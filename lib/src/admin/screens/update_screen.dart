@@ -63,11 +63,12 @@ class _UpdateScreenState extends ConsumerState<UpdateScreen> {
   }
 
   Future<void> _pickAndUpload() async {
-    final result = await FilePickerPlatform.instance.pickFiles(
+    final files = await FilePickerPlatform.instance.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['apk'],
     );
-    final path = result?.files.single.path;
+    if (files.isEmpty) return;
+    final path = files.first.path;
     if (path == null) return;
     setState(() {
       _uploading = true;
