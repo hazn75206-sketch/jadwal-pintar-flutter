@@ -44,6 +44,12 @@ jobs:
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           cat android/local.properties
 
+      - name: Diagnostik SDK Flutter (isi includeBuild)
+        run: |
+          flutter --version
+          ls -la "$FLUTTER_ROOT/packages/flutter_tools/gradle"
+          du -sh "$FLUTTER_ROOT"
+
       - name: Install Android platform 36
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
