@@ -19,7 +19,7 @@ Future<String?> androidIdHash() async {
   try {
     final info = await DeviceInfoPlugin().androidInfo;
     final id = info.id;
-    if (id == null || id.isEmpty || id == _brokenAndroidId) return null;
+    if (id.isEmpty || id == _brokenAndroidId) return null;
     return sha256.convert(utf8.encode('$id|$_deviceSalt')).toString();
   } catch (_) {
     return null;

@@ -16,7 +16,7 @@ abstract final class Rtdb {
   static const String profilePhoto = 'profilePhoto';
 }
 
-/// Normalisasi nilai mentah snapshot menjadi Map<String, dynamic>.
+/// Normalisasi nilai mentah snapshot menjadi `Map<String, dynamic>`.
 Map<String, dynamic> rtdbMap(dynamic value) {
   if (value is Map) {
     return value.map((key, val) => MapEntry('$key', val));

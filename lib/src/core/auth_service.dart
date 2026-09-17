@@ -22,7 +22,7 @@ class AuthService {
   Future<User> signInWithGoogle() async {
     final account = await _google.authenticate();
     final token = account.authentication.idToken;
-    if (token.isEmpty) {
+    if (token == null || token.isEmpty) {
       throw StateError('Google tidak memberikan ID token.');
     }
     final credential =
