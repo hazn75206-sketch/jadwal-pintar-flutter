@@ -83,6 +83,18 @@ class DatabaseService {
 
   // ---------- Baca sekali ----------
 
+  /// true bila [uid] terdaftar sebagai admin aktif.
+  Future<bool> isAdmin(String uid) async {
+    final snapshot = await _root.child('${Rtdb.admins}/$uid').get();
+    if (!snapshot.exists) return false;
+    final value = snapshot.value;
+    if (value is bool) return value;
+    if (value is Map) {
+      return (value['enabled'] as bool?) ?? false;
+    }
+    return false;
+  }
+
   Future<String?> loadSchedule(String uid) async {
     final snapshot =
         await _root.child('${Rtdb.users}/$uid/${Rtdb.jadwal}').get();

@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
+import 'admin/theme.dart';
 import 'core/flavor.dart';
 import 'screens/admin_home.dart';
 import 'screens/user_home.dart';
@@ -13,6 +14,16 @@ class JadwalPintarApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (flavor == AppFlavor.admin) {
+      return MaterialApp(
+        title: flavor.title,
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: ThemeMode.system,
+        home: const AdminHomeScreen(),
+      );
+    }
     return MaterialApp(
       title: flavor.title,
       debugShowCheckedModeBanner: false,
@@ -23,9 +34,7 @@ class JadwalPintarApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: flavor == AppFlavor.user
-          ? const UserHomeScreen()
-          : const AdminHomeScreen(),
+      home: const UserHomeScreen(),
     );
   }
 }
