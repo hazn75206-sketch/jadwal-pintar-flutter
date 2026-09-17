@@ -88,7 +88,7 @@ class PrivacySheet extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   const _InfoRow({required this.icon, required this.text});
 
-  final IconData icon;
+  final FaIconData icon;
   final String text;
 
   @override

@@ -11,11 +11,11 @@ import '../schedule_model.dart';
 import '../schedule_provider.dart';
 import '../session.dart';
 import '../update_download.dart';
-import 'account_sheet.dart';
-import 'data_sheet.dart';
-import 'info_sheets.dart';
-import 'input_sheet.dart';
-import 'theme_sheet.dart';
+import '../sheets/account_sheet.dart';
+import '../sheets/data_sheet.dart';
+import '../sheets/info_sheets.dart';
+import '../sheets/input_sheet.dart';
+import '../sheets/theme_sheet.dart';
 
 /// versionCode aplikasi ini (untuk cek update; naik tiap rilis).
 const int kAppVersionCode = 3;
@@ -750,7 +750,7 @@ class _UpdateOverlayState extends State<_UpdateOverlay> {
                           style:
                               TextStyle(color: Color(0xFF97AAC8)),
                         ),
-                      );
+                      ),
               },
             ),
           ],

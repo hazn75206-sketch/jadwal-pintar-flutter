@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -58,14 +58,14 @@ class _DataSheetState extends ConsumerState<DataSheet> {
     final pretty = const JsonEncoder.withIndent('  ').convert(
       ScheduleData.fromJsonString(json).days,
     );
-    final path = await FilePickerPlatform.instance.saveFile(
+    final uri = await FilePicker.saveFile(
       dialogTitle: 'Simpan jadwal',
       fileName: '$name.json',
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-      bytes: utf8.encode(pretty),
+      mimeType: 'application/json',
+      bytes: Uint8List.fromList(utf8.encode(pretty)),
     );
-    if (path == null && mounted) {
+    if (uri == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ekspor dibatalkan')),
       );
@@ -80,20 +80,14 @@ class _DataSheetState extends ConsumerState<DataSheet> {
   }
 
   Future<void> _import() async {
-    final picked = await FilePickerPlatform.instance.pickFiles(
+    final files = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['json', 'txt'],
-      withData: true,
     );
-    if (picked.isEmpty) return;
-    final file = picked.first;
+    if (files.isEmpty) return;
     String? raw;
     try {
-      if (file.bytes != null) {
-        raw = utf8.decode(file.bytes!);
-      } else if (file.path != null) {
-        raw = await File(file.path!).readAsString();
-      }
+      raw = utf8.decode(await files.first.readAsBytes());
     } catch (_) {
       raw = null;
     }

@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -63,13 +65,29 @@ class _UpdateScreenState extends ConsumerState<UpdateScreen> {
   }
 
   Future<void> _pickAndUpload() async {
-    final files = await FilePickerPlatform.instance.pickFiles(
+    final files = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['apk'],
     );
     if (files.isEmpty) return;
-    final path = files.first.path;
-    if (path == null) return;
+    String? path = files.first.path;
+    if (path == null) {
+      try {
+        final bytes = await files.first.readAsBytes();
+        final tmp = File(
+          '${Directory.systemTemp.path}/upload-'
+          '${DateTime.now().millisecondsSinceEpoch}.apk',
+        );
+        await tmp.writeAsBytes(bytes, flush: true);
+        path = tmp.path;
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('File tidak terbaca: $e')),
+        );
+        return;
+      }
+    }
     setState(() {
       _uploading = true;
       _progress = 0;

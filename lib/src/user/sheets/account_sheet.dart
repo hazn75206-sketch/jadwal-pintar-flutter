@@ -10,9 +10,7 @@ import '../../core/prefs.dart';
 import '../../core/sfx.dart';
 import '../schedule_provider.dart';
 import '../session.dart';
-import 'data_sheet.dart';
 import 'info_sheets.dart';
-import 'theme_sheet.dart';
 import 'theme_sheet.dart';
 
 /// Foto profil custom milik akun ini (menang atas foto Google).
@@ -47,7 +45,6 @@ class AccountSheet extends ConsumerStatefulWidget {
 class _AccountSheetState extends ConsumerState<AccountSheet> {
   bool _busy = false;
   String _status = '';
-  bool _photoLoaded = false;
 
   @override
   void initState() {
@@ -61,7 +58,6 @@ class _AccountSheetState extends ConsumerState<AccountSheet> {
       final local = prefs.getString(PrefKeys.customPhoto) ?? '';
       if (local.isNotEmpty) {
         ref.read(customPhotoProvider.notifier).state = local;
-        _photoLoaded = true;
         return;
       }
       final uid = ref.read(authServiceProvider).current?.uid;
@@ -74,7 +70,6 @@ class _AccountSheetState extends ConsumerState<AccountSheet> {
           ref.read(customPhotoProvider.notifier).state = remote;
         }
       }
-      _photoLoaded = true;
     } catch (_) {}
   }
 
@@ -98,14 +93,15 @@ class _AccountSheetState extends ConsumerState<AccountSheet> {
   }
 
   Future<void> _pickPhoto() async {
-    final picked = await FilePickerPlatform.instance.pickFiles(
-      type: FileType.image,
-      withData: true,
-    );
-    if (picked.isEmpty) return;
-    final file = picked.first;
-    List<int>? bytes = file.bytes;
-    if (bytes == null) return;
+    final files = await FilePicker.pickFiles(type: FileType.image);
+    if (files.isEmpty) return;
+    final file = files.first;
+    List<int> bytes;
+    try {
+      bytes = await file.readAsBytes();
+    } catch (_) {
+      return;
+    }
     if (bytes.length > 350 * 1024) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -343,7 +339,7 @@ class _AccountSheetState extends ConsumerState<AccountSheet> {
 class _BenefitRow extends StatelessWidget {
   const _BenefitRow({required this.icon, required this.text});
 
-  final IconData icon;
+  final FaIconData icon;
   final String text;
 
   @override
@@ -424,7 +420,7 @@ class _SettingRow extends StatelessWidget {
     this.danger = false,
   });
 
-  final IconData icon;
+  final FaIconData icon;
   final String label;
   final VoidCallback onTap;
   final bool danger;
