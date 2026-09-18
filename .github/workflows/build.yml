@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  GRADLE_OPTS: -Dorg.gradle.daemon=true -Dorg.gradle.parallel=true -Dorg.gradle.caching=true
+  GRADLE_OPTS: -Dorg.gradle.parallel=true -Dorg.gradle.caching=true
 
 jobs:
   build-user:
@@ -23,6 +23,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+          cache: gradle
 
       - name: Setup Flutter 3.47.4
         uses: subosito/flutter-action@v2
@@ -31,10 +32,14 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Install Android platform 36
+      - name: Install Android platform 36 (lewati bila sudah ada)
         run: |
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "platform-tools" || true
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          if [ ! -d "$ANDROID_HOME/platforms/android-36" ]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "platform-tools" || true
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          else
+            echo "android-36 sudah ada, lewati."
+          fi
 
       - name: Generate google-services.json dari Secrets
         env:
@@ -63,6 +68,14 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
 
       - name: Flutter pub get
         run: flutter pub get
@@ -107,6 +120,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+          cache: gradle
 
       - name: Setup Flutter 3.47.4
         uses: subosito/flutter-action@v2
@@ -115,10 +129,14 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Install Android platform 36
+      - name: Install Android platform 36 (lewati bila sudah ada)
         run: |
-          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "platform-tools" || true
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          if [ ! -d "$ANDROID_HOME/platforms/android-36" ]; then
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "platform-tools" || true
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          else
+            echo "android-36 sudah ada, lewati."
+          fi
 
       - name: Generate google-services.json dari Secrets
         env:
@@ -147,6 +165,14 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Cache pub packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
 
       - name: Flutter pub get
         run: flutter pub get
