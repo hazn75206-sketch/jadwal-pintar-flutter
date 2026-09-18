@@ -1,11 +1,11 @@
-import 'dart:io';
+import 'dart:convert';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 
 import '../../core/models.dart';
 import '../../core/providers.dart';
@@ -35,8 +35,7 @@ class _UpdateScreenState extends ConsumerState<UpdateScreen> {
   bool _force = false;
   bool _loaded = false;
   bool _saving = false;
-  bool _uploading = false;
-  double? _progress;
+  bool _loadingReleases = false;
 
   @override
   void dispose() {
@@ -62,63 +61,92 @@ class _UpdateScreenState extends ConsumerState<UpdateScreen> {
     _message.text = update.message;
   }
 
-  Future<void> _pickAndUpload() async {
-    final files = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['apk'],
-    );
-    if (files.isEmpty) return;
-    String? path = files.first.path;
-    if (path == null) {
-      try {
-        final bytes = await files.first.readAsBytes();
-        final tmp = File(
-          '${Directory.systemTemp.path}/upload-'
-          '${DateTime.now().millisecondsSinceEpoch}.apk',
-        );
-        await tmp.writeAsBytes(bytes, flush: true);
-        path = tmp.path;
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('File tidak terbaca: $e')),
-        );
+  /// Ambil URL APK user dari GitHub Releases (hosting update gratis).
+  /// Repo publik → API tanpa auth. Tag `vN` sekaligus mengisi versionCode.
+  Future<void> _pickFromGitHub() async {
+    setState(() => _loadingReleases = true);
+    try {
+      final res = await http
+          .get(Uri.parse(
+            'https://api.github.com/repos/hazn75206-sketch/'
+            'jadwal-pintar-flutter/releases',
+          ))
+          .timeout(const Duration(seconds: 15));
+      if (res.statusCode != 200) {
+        throw 'GitHub: HTTP ${res.statusCode}';
+      }
+      final list =
+          (jsonDecode(res.body) as List).cast<Map<String, dynamic>>();
+      if (list.isEmpty) {
+        _snack('Belum ada rilis di GitHub.', true);
         return;
       }
-    }
-    setState(() {
-      _uploading = true;
-      _progress = 0;
-    });
-    try {
-      final url = await ref.read(storageServiceProvider).uploadApk(
-            bucket: _bucket.text.trim(),
-            objectName:
-                'updates/jadwal-pintar-${DateTime.now().millisecondsSinceEpoch}.apk',
-            file: File(path),
-            onProgress: (progress) {
-              if (mounted) setState(() => _progress = progress);
-            },
-          );
-      _apkUrl.text = url;
-      setState(() => _enabled = true);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Upload APK selesai')),
+      final picked = await showModalBottomSheet<Map<String, dynamic>>(
+        context: context,
+        builder: (sheetContext) => SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const ListTile(
+                title: Text(
+                  'Pilih rilis GitHub',
+                  style: TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              for (final r in list)
+                ListTile(
+                  title: Text('${r['tag_name'] ?? r['name'] ?? '?'}'),
+                  subtitle: Text(_releaseSubtitle(r)),
+                  trailing:
+                      const Icon(Icons.cloud_download_outlined),
+                  onTap: () => Navigator.of(sheetContext).pop(r),
+                ),
+            ],
+          ),
+        ),
       );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Upload APK gagal: $e')),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _uploading = false;
-          _progress = null;
-        });
+      if (picked == null || !mounted) return;
+      final assets =
+          ((picked['assets'] as List?) ?? const []).cast<Map>();
+      Map? userApk;
+      for (final a in assets) {
+        final name = '${a['name'] ?? ''}';
+        if (name.contains('user') && name.endsWith('.apk')) {
+          userApk = a;
+          break;
+        }
       }
+      userApk ??= assets.firstWhere(
+        (a) => '${a['name'] ?? ''}'.endsWith('.apk'),
+        orElse: () => const <String, dynamic>{},
+      );
+      final url = '${userApk?['browser_download_url'] ?? ''}';
+      if (url.isEmpty) {
+        _snack('Rilis ini tidak berisi APK.', true);
+        return;
+      }
+      setState(() {
+        _apkUrl.text = url;
+        _enabled = true;
+        final num = int.tryParse(
+          '${picked['tag_name'] ?? ''}'.replaceAll(RegExp('[^0-9]'), ''),
+        );
+        if (num != null && num > 0) _code.text = '$num';
+      });
+      _snack('URL APK dari ${picked['tag_name']} terisi', false);
+    } catch (e) {
+      _snack('Gagal memuat rilis: $e', true);
+    } finally {
+      if (mounted) setState(() => _loadingReleases = false);
     }
+  }
+
+  String _releaseSubtitle(Map<String, dynamic> r) {
+    final count = ((r['assets'] as List?) ?? const []).length;
+    final date = '${r['published_at'] ?? r['created_at'] ?? ''}';
+    final day = date.length >= 10 ? date.substring(0, 10) : date;
+    return '$count berkas • $day';
   }
 
   Future<void> _save() async {
@@ -259,19 +287,17 @@ class _UpdateScreenState extends ConsumerState<UpdateScreen> {
                       readOnly: true,
                       maxLines: 2,
                       decoration: const InputDecoration(
-                        labelText: 'URL APK (dari upload)',
+                        labelText: 'URL APK (dari GitHub)',
                       ),
                     ),
                     const SizedBox(height: 10),
-                    if (_uploading)
-                      LinearProgressIndicator(
-                        value: _progress,
-                      ),
                     OutlinedButton.icon(
-                      onPressed: _uploading ? null : _pickAndUpload,
-                      icon: const Icon(Icons.upload_outlined),
-                      label: Text(
-                          _uploading ? 'Mengunggah…' : 'Upload APK'),
+                      onPressed:
+                          _loadingReleases ? null : _pickFromGitHub,
+                      icon: const Icon(Icons.cloud_download_outlined),
+                      label: Text(_loadingReleases
+                          ? 'Memuat rilis…'
+                          : 'Ambil dari GitHub'),
                     ),
                   ],
                 ),
