@@ -42,6 +42,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _menuOpen = false;
   bool _blockedDialogOpen = false;
   bool _gateShown = false;
+  // Update opsional di-dismiss ("Nanti saja") — FAB tampil lagi.
+  bool _updateDismissed = false;
   bool _scrolledToday = false;
   Timer? _minuteTimer;
   final _scrollController = ScrollController();
@@ -273,6 +275,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
+    // D: reset status dismiss saat update hilang/muncul baru.
+    if (!showUpdate && _updateDismissed) _updateDismissed = false;
+    final forceUpdate = showUpdate && (update?.force ?? false);
+    // D: update wajib = fullscreen tanpa FAB (cermin maintenance).
+    if (forceUpdate) {
+      return PopScope(
+        canPop: false,
+        child: Scaffold(
+          body: _UpdateOverlay(
+            update: update!,
+            downloader: _downloader,
+          ),
+        ),
+      );
+    }
+
     // P5: preset Glass = efek kaca iPhone (blur + border + glow).
     final glass =
         ref.watch(userThemeProvider).preset == ThemePreset.glass;
@@ -350,18 +368,29 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
               ],
             ),
-            if (showUpdate)
-              _UpdateOverlay(update: update, downloader: _downloader),
+            // D: update opsional tetap overlay, tapi menutup area FAB.
+            if (showUpdate && !forceUpdate)
+              Positioned.fill(
+                child: _UpdateOverlay(
+                  update: update,
+                  downloader: _downloader,
+                  onDismissed: () =>
+                      setState(() => _updateDismissed = true),
+                ),
+              ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          final day = today.isEmpty ? kDays.first : today;
-          _openSheet(InputSheet(day: day));
-        },
-        child: const FaIcon(FontAwesomeIcons.plus),
-      ),
+      // D: FAB disembunyikan selama overlay update tampil.
+      floatingActionButton: (showUpdate && !_updateDismissed)
+          ? null
+          : FloatingActionButton(
+              onPressed: () {
+                final day = today.isEmpty ? kDays.first : today;
+                _openSheet(InputSheet(day: day));
+              },
+              child: const FaIcon(FontAwesomeIcons.plus),
+            ),
     );
   }
 
@@ -752,10 +781,17 @@ class _MaintenanceOverlay extends StatelessWidget {
 }
 
 class _UpdateOverlay extends StatefulWidget {
-  const _UpdateOverlay({required this.update, required this.downloader});
+  const _UpdateOverlay({
+    required this.update,
+    required this.downloader,
+    this.onDismissed,
+  });
 
   final UpdateConfig update;
   final UpdateDownloader downloader;
+
+  /// Dipanggil saat update opsional di-dismiss ("Nanti saja").
+  final VoidCallback? onDismissed;
 
   @override
   State<_UpdateOverlay> createState() => _UpdateOverlayState();
@@ -773,8 +809,8 @@ class _UpdateOverlayState extends State<_UpdateOverlay> {
     final apkUrl = update.apkUrl;
     final versionName = update.versionName;
     final force = update.force;
-    return Positioned.fill(
-      child: Container(
+    // Dipakai fullscreen (force) maupun di Stack (opsional).
+    return Container(
         color: const Color(0xFF060B16),
         padding: const EdgeInsets.all(28),
         child: Column(
@@ -844,8 +880,10 @@ class _UpdateOverlayState extends State<_UpdateOverlay> {
                     ),
                     if (!force)
                       TextButton(
-                        onPressed: () =>
-                            setState(() => _dismissed = true),
+                        onPressed: () {
+                          setState(() => _dismissed = true);
+                          widget.onDismissed?.call();
+                        },
                         child: const Text(
                           'Nanti saja',
                           style:
@@ -858,7 +896,6 @@ class _UpdateOverlayState extends State<_UpdateOverlay> {
               ),
           ],
         ),
-      ),
     );
   }
 }
