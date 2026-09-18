@@ -233,6 +233,18 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               ),
             ),
           ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              _confirmDeleteUser(ref, user);
+            },
+            child: Text(
+              'Hapus riwayat',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -281,6 +293,106 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         SnackBar(
           content: Text(
             'Akses ${user.name} ${enabled ? 'diaktifkan' : 'dinonaktifkan'}.',
+          ),
+        ),
+      );
+    } catch (e) {
+      await Sfx.play('error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal: $e')),
+      );
+    }
+  }
+
+  /// Konfirmasi 2 langkah hapus riwayat (aksi destruktif).
+  Future<void> _confirmDeleteUser(WidgetRef ref, UserProfile user) async {
+    final first = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hapus riwayat akun?'),
+        content: Text(
+          'Profil, jadwal cloud, dan status akses milik '
+          '"${user.name.isEmpty ? user.uid : user.name}" akan dihapus '
+          'dari database.\n\nBlokir perangkat TIDAK ikut terhapus.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(
+              'Lanjut',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (first != true || !mounted) return;
+    final second = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Yakin? Tidak bisa dibatalkan!'),
+        content: Text('UID: ${user.uid}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Hapus permanen'),
+          ),
+        ],
+      ),
+    );
+    if (second == true) await _deleteUser(ref, user);
+  }
+
+  /// Hapus riwayat 1 akun. Lindungi diri sendiri + sesama admin.
+  Future<void> _deleteUser(WidgetRef ref, UserProfile user) async {
+    final admin = FirebaseAuth.instance.currentUser;
+    if (admin == null) return;
+    if (admin.uid == user.uid) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tidak bisa menghapus akun sendiri.'),
+        ),
+      );
+      return;
+    }
+    final db = ref.read(databaseProvider);
+    try {
+      if (await db.isAdmin(user.uid)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Tidak bisa menghapus sesama admin.'),
+          ),
+        );
+        return;
+      }
+      await db.deleteUserData(user.uid);
+      await db.writeAudit(
+        adminUid: admin.uid,
+        adminEmail: admin.email ?? '',
+        action: 'delete_user_${user.uid}',
+      );
+      ref
+        ..invalidate(profilesProvider)
+        ..invalidate(accessMapProvider);
+      await Sfx.play('success');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Riwayat ${user.name.isEmpty ? user.uid : user.name} dihapus.',
           ),
         ),
       );

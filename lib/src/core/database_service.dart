@@ -166,6 +166,15 @@ class DatabaseService {
   Future<void> removeDeviceBan(String hash) =>
       _root.child('${Rtdb.deviceBans}/$hash').remove();
 
+  /// Hapus SELURUH riwayat 1 akun: jadwal+foto (users), profil,
+  /// dan status akses. Butuh rules v2 (admin boleh tulis).
+  /// Blokir perangkat TIDAK ikut (kelola di layar Blokir).
+  Future<void> deleteUserData(String uid) => Future.wait(<Future<void>>[
+        _root.child('${Rtdb.users}/$uid').remove(),
+        _root.child('${Rtdb.userProfiles}/$uid').remove(),
+        _root.child('${Rtdb.userAccess}/$uid').remove(),
+      ]);
+
   Future<void> saveAppConfig(Map<String, Object?> map) =>
       _root.child(Rtdb.appConfig).set(map);
 
