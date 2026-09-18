@@ -11,7 +11,12 @@ import 'src/core/sfx.dart';
 /// Entrypoint flavor ADMIN (`--flavor admin --target lib/main_admin.dart`).
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  unawaited(Sfx.init());
+  try {
+    await Firebase.initializeApp();
+    unawaited(Sfx.init());
+  } catch (e) {
+    runApp(BootErrorScreen(flavor: AppFlavor.admin, error: e));
+    return;
+  }
   runApp(const ProviderScope(child: JadwalPintarApp(flavor: AppFlavor.admin)));
 }

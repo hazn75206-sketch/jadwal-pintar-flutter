@@ -36,9 +36,51 @@ class JadwalPintarApp extends ConsumerWidget {
   }
 }
 
+/// Layar diagnostik bila inisialisasi native gagal SEBELUM runApp.
+/// Tanpa ini kegagalan init = layar hitam tanpa pesan.
+class BootErrorScreen extends StatelessWidget {
+  const BootErrorScreen({super.key, required this.flavor, required this.error});
+
+  final AppFlavor flavor;
+  final Object error;
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Icon(Icons.error_outline, size: 56),
+                const SizedBox(height: 16),
+                const Text(
+                  'Gagal memulai aplikasi',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 20),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Flavor: ${flavor.name} • v3.0.0+3',
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                SelectableText('$error'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Status koneksi Firebase untuk layar bootstrap Fase 0.
-class FirebaseStatusCard extends StatelessWidget {
-  const FirebaseStatusCard({super.key, required this.flavor});
+class FirebaseStatusCard extends StatelessWidget {  const FirebaseStatusCard({super.key, required this.flavor});
 
   final AppFlavor flavor;
 

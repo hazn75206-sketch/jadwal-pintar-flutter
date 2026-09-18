@@ -12,10 +12,17 @@ import 'src/core/sfx.dart';
 /// Entrypoint flavor USER (`--flavor user --target lib/main_user.dart`).
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  // Semua init dibungkus: kegagalan SEBELUM runApp = layar hitam tanpa
+  // pesan. Tangkap lalu tampilkan sebagai layar diagnostik.
   try {
-    await AndroidAlarmManager.initialize();
-  } catch (_) {}
-  unawaited(Sfx.init());
+    await Firebase.initializeApp();
+    try {
+      await AndroidAlarmManager.initialize();
+    } catch (_) {}
+    unawaited(Sfx.init());
+  } catch (e) {
+    runApp(BootErrorScreen(flavor: AppFlavor.user, error: e));
+    return;
+  }
   runApp(const ProviderScope(child: JadwalPintarApp(flavor: AppFlavor.user)));
 }
