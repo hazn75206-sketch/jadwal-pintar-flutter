@@ -34,6 +34,11 @@ android {
         targetSdk = 26
         versionCode = 3
         versionName = "3.0"
+        // Hanya arm64: semua HP target 64-bit; APK lebih kecil
+        // (tanpa armeabi-v7a & x86_64).
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
     signingConfigs {
