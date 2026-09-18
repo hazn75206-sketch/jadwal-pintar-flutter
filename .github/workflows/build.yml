@@ -77,6 +77,11 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release --flavor user --target lib/main_user.dart --build-number 3 --build-name 3.0.0
 
+      - name: Pastikan values Firebase ter-generate (user)
+        run: |
+          find build android/app/build -path "*google-services*values.xml" 2>/dev/null
+          test -n "$(find build android/app/build -path "*google-services/userRelease/values.xml" 2>/dev/null)"
+
       - name: Verifikasi tanda tangan APK user
         run: |
           APKSIGNER=$(echo "$ANDROID_HOME"/build-tools/*/apksigner | tr ' ' '\n' | sort -V | tail -n 1)
@@ -152,6 +157,11 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release --flavor admin --target lib/main_admin.dart --build-number 3 --build-name 3.0.0
+
+      - name: Pastikan values Firebase ter-generate (admin)
+        run: |
+          find build android/app/build -path "*google-services*values.xml" 2>/dev/null
+          test -n "$(find build android/app/build -path "*google-services/adminRelease/values.xml" 2>/dev/null)"
 
       - name: Verifikasi tanda tangan APK admin
         run: |
