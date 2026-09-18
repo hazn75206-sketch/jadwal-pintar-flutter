@@ -90,10 +90,19 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release --flavor user --target lib/main_user.dart --build-number 3 --build-name 3.0.0
 
-      - name: Pastikan values Firebase ter-generate (user)
+      - name: Pastikan values Firebase ada di APK (user)
         run: |
-          find build android/app/build -path "*google-services*values.xml" 2>/dev/null
-          test -n "$(find build android/app/build -path "*google-services/userRelease/values.xml" 2>/dev/null)"
+          python3 - <<'EOF'
+          import sys, zipfile
+          z = zipfile.ZipFile('build/app/outputs/flutter-apk/app-user-release.apk')
+          arsc = z.read('resources.arsc')
+          need = [b'google_app_id', b'firebase_database_url']
+          missing = [k.decode() for k in need if k not in arsc]
+          if missing:
+              print('GAGAL: tidak ada di APK:', missing)
+              sys.exit(1)
+          print('OK: values Firebase ada di APK user.')
+          EOF
 
       - name: Verifikasi tanda tangan APK user
         run: |
@@ -184,10 +193,18 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: flutter build apk --release --flavor admin --target lib/main_admin.dart --build-number 3 --build-name 3.0.0
 
-      - name: Pastikan values Firebase ter-generate (admin)
+      - name: Pastikan values Firebase ada di APK (admin)
         run: |
-          find build android/app/build -path "*google-services*values.xml" 2>/dev/null
-          test -n "$(find build android/app/build -path "*google-services/adminRelease/values.xml" 2>/dev/null)"
+          python3 - <<'EOF'
+          import sys, zipfile
+          z = zipfile.ZipFile('build/app/outputs/flutter-apk/app-admin-release.apk')
+          arsc = z.read('resources.arsc')
+          need = [b'google_app_id', b'firebase_database_url']
+          if missing := [k.decode() for k in need if k not in arsc]:
+              print('GAGAL: tidak ada di APK:', missing)
+              sys.exit(1)
+          print('OK: values Firebase ada di APK admin.')
+          EOF
 
       - name: Verifikasi tanda tangan APK admin
         run: |
