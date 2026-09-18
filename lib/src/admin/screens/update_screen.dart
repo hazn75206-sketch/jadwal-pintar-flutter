@@ -121,7 +121,7 @@ class _UpdateScreenState extends ConsumerState<UpdateScreen> {
         (a) => '${a['name'] ?? ''}'.endsWith('.apk'),
         orElse: () => const <String, dynamic>{},
       );
-      final url = '${userApk?['browser_download_url'] ?? ''}';
+      final url = '${userApk['browser_download_url'] ?? ''}';
       if (url.isEmpty) {
         _snack('Rilis ini tidak berisi APK.', true);
         return;

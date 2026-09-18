@@ -278,14 +278,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     // D: reset status dismiss saat update hilang/muncul baru.
     if (!showUpdate && _updateDismissed) _updateDismissed = false;
-    final forceUpdate = showUpdate && (update?.force ?? false);
+    final forceUpdate = showUpdate && update.force;
     // D: update wajib = fullscreen tanpa FAB (cermin maintenance).
     if (forceUpdate) {
       return PopScope(
         canPop: false,
         child: Scaffold(
           body: _UpdateOverlay(
-            update: update!,
+            update: update,
             downloader: _downloader,
           ),
         ),
