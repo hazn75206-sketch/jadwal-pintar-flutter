@@ -78,8 +78,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (!mounted) return;
       final target = key?.currentContext;
       if (target != null) {
-        // ignore: use_build_context_synchronously
         Scrollable.ensureVisible(
+          // ignore: use_build_context_synchronously
           target,
           duration: const Duration(milliseconds: 400),
           alignment: 0.3,
@@ -750,8 +750,10 @@ class _UpdateOverlayState extends State<_UpdateOverlay> {
                               TextStyle(color: Color(0xFF97AAC8)),
                         ),
                       ),
-              },
-            ),
+                    ],
+                  );
+                },
+              ),
           ],
         ),
       ),
