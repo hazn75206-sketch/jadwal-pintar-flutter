@@ -285,7 +285,7 @@ class SessionController extends StateNotifier<SessionState> {
         'lastLoginAt': now,
         'lastSeenAt': now,
         'online': true,
-        'appVersion': '4.0.0',
+        'appVersion': '5.0.0',
         'deviceModel': model,
         if (_deviceHash != null && _deviceHash!.isNotEmpty)
           'deviceIdHash': _deviceHash!
@@ -299,7 +299,7 @@ class SessionController extends StateNotifier<SessionState> {
       if (hash != null && hash.isNotEmpty) {
         await _db.writeDevice(uid, hash, <String, Object?>{
           'deviceModel': model,
-          'appVersion': '4.0.0',
+          'appVersion': '5.0.0',
           'lastSeenAt': now,
           'online': true,
         });
