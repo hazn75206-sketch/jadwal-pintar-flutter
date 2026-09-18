@@ -32,8 +32,8 @@ android {
         // targetSdk dipertahankan 26 (paritas perilaku alarm/notifikasi/storage
         // dengan aplikasi native; bukan rilis Play Store).
         targetSdk = 26
-        versionCode = 3
-        versionName = "3.0"
+        versionCode = 4
+        versionName = "4.0.0"
         // Hanya arm64: semua HP target 64-bit; APK lebih kecil
         // (tanpa armeabi-v7a & x86_64).
         ndk {

@@ -21,12 +21,26 @@ class StatCard extends StatelessWidget {
     final color = tint ?? scheme.primary;
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 10),
+            Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: .12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 20),
+                ),
+                const Spacer(),
+                Icon(Icons.arrow_outward_rounded, size: 15, color: scheme.onSurfaceVariant),
+              ],
+            ),
+            const SizedBox(height: 16),
             Text(
               value,
               style: Theme.of(context)

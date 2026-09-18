@@ -404,9 +404,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _header(SessionState session) {
     final customPhoto = ref.watch(customPhotoProvider);
     final avatar = customPhoto.isNotEmpty ? customPhoto : session.photo;
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Row(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerLow.withValues(alpha: .72),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: scheme.outlineVariant.withValues(alpha: .38)),
+        ),
+        child: Row(
         children: [
           InkWell(
             borderRadius: BorderRadius.circular(999),
@@ -442,17 +450,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           IconButton(
+            tooltip: _menuOpen ? 'Sembunyikan menu' : 'Buka menu',
             onPressed: () {
               Sfx.play('click');
               setState(() => _menuOpen = !_menuOpen);
             },
+            style: IconButton.styleFrom(
+              backgroundColor: scheme.surfaceContainerHighest.withValues(alpha: .55),
+            ),
             icon: FaIcon(
               _menuOpen
-                  ? FontAwesomeIcons.eyeSlash
-                  : FontAwesomeIcons.eye,
+                  ? FontAwesomeIcons.chevronUp
+                  : FontAwesomeIcons.ellipsis,
+              size: 16,
             ),
           ),
         ],
+      ),
       ),
     );
   }

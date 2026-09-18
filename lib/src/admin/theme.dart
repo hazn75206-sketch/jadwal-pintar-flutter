@@ -22,11 +22,18 @@ abstract final class AppTheme {
       colorScheme: scheme,
       useMaterial3: true,
       scaffoldBackgroundColor: ink,
-      appBarTheme: const AppBarTheme(centerTitle: false),
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
       cardTheme: CardThemeData(
         margin: EdgeInsets.zero,
+        elevation: 0,
+        color: const Color(0xFF111A2C),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusCard),
+          side: BorderSide(color: Colors.white.withValues(alpha: .06)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -55,8 +62,10 @@ abstract final class AppTheme {
       appBarTheme: const AppBarTheme(centerTitle: false),
       cardTheme: CardThemeData(
         margin: EdgeInsets.zero,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(radiusCard),
+          side: BorderSide(color: scheme.outlineVariant.withValues(alpha: .5)),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
