@@ -13,9 +13,7 @@ import '../session.dart';
 import '../update_download.dart';
 import '../sheets/account_sheet.dart';
 import '../sheets/data_sheet.dart';
-import '../sheets/info_sheets.dart';
 import '../sheets/input_sheet.dart';
-import '../sheets/theme_sheet.dart';
 
 /// versionCode aplikasi ini (untuk cek update; naik tiap rilis).
 const int kAppVersionCode = 3;
@@ -80,6 +78,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (!mounted) return;
       final target = key?.currentContext;
       if (target != null) {
+        // ignore: use_build_context_synchronously
         Scrollable.ensureVisible(
           target,
           duration: const Duration(milliseconds: 400),
@@ -316,7 +315,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 message: maintenance?.message ?? '',
               ),
             if (showUpdate)
-              _UpdateOverlay(update: update!, downloader: _downloader),
+              _UpdateOverlay(update: update, downloader: _downloader),
           ],
         ),
       ),
@@ -345,7 +344,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               backgroundImage:
                   avatar.isNotEmpty ? NetworkImage(avatar) : null,
               onBackgroundImageError:
-                  avatar.isNotEmpty ? (_, __) {} : null,
+                  avatar.isNotEmpty ? (_, _) {} : null,
               child: avatar.isEmpty
                   ? const FaIcon(FontAwesomeIcons.user, size: 18)
                   : null,

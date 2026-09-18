@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-import '../core/sfx.dart';
-import 'schedule_model.dart';
-import 'schedule_provider.dart';
+import '../../core/sfx.dart';
+import '../schedule_model.dart';
+import '../schedule_provider.dart';
 
 /// Modal input pelajaran (cermin #modal native): dropdown hari custom +
 /// baris mapel dinamis (+ di baris terakhir, x di lainnya).
@@ -102,7 +102,7 @@ class _InputSheetState extends ConsumerState<InputSheet> {
               ...List.generate(_controllers.length, (i) {
                 final isLast = i == _controllers.length - 1;
                 final showAction =
-                    !widget.isEdit && _controllers.length >= 1;
+                    !widget.isEdit && _controllers.isNotEmpty;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Row(

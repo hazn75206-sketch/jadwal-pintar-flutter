@@ -223,7 +223,7 @@ class _AccountSheetState extends ConsumerState<AccountSheet> {
               radius: 38,
               backgroundImage:
                   photo.isNotEmpty ? NetworkImage(photo) : null,
-              onBackgroundImageError: photo.isNotEmpty ? (_, __) {} : null,
+              onBackgroundImageError: photo.isNotEmpty ? (_, _) {} : null,
               child: photo.isEmpty
                   ? const FaIcon(FontAwesomeIcons.user, size: 30)
                   : null,
