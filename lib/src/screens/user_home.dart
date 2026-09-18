@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../session.dart';
-import 'home_screen.dart';
-import 'splash_screen.dart';
+import '../user/session.dart';
+import '../user/screens/home_screen.dart';
+import '../user/screens/splash_screen.dart';
 
 /// Entrypoint UI flavor user: splash saat boot, lalu layar jadwal + gate.
 /// Splash ditahan minimal 1,2 detik agar tidak kedip.
