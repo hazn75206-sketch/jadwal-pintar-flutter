@@ -19,7 +19,7 @@ import '../sheets/data_sheet.dart';
 import '../sheets/input_sheet.dart';
 
 /// versionCode aplikasi ini (untuk cek update; naik tiap rilis).
-const int kAppVersionCode = 3;
+const int kAppVersionCode = 4;
 
 const List<String> _idMonths = <String>[
   'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',

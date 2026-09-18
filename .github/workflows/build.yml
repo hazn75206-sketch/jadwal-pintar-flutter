@@ -89,7 +89,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: flutter build apk --release --flavor user --target lib/main_user.dart --target-platform android-arm64 --build-number 3 --build-name 3.0.0
+        run: flutter build apk --release --flavor user --target lib/main_user.dart --target-platform android-arm64 --build-number 4 --build-name 4.0.0
 
       - name: Pastikan values Firebase ada di APK (user)
         run: |
@@ -192,7 +192,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: flutter build apk --release --flavor admin --target lib/main_admin.dart --target-platform android-arm64 --build-number 3 --build-name 3.0.0
+        run: flutter build apk --release --flavor admin --target lib/main_admin.dart --target-platform android-arm64 --build-number 4 --build-name 4.0.0
 
       - name: Pastikan values Firebase ada di APK (admin)
         run: |

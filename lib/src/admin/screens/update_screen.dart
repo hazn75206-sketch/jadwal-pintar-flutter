@@ -23,8 +23,8 @@ class UpdateScreen extends ConsumerStatefulWidget {
 }
 
 class _UpdateScreenState extends ConsumerState<UpdateScreen> {
-  final _code = TextEditingController(text: '3');
-  final _name = TextEditingController(text: '3.0.0');
+  final _code = TextEditingController(text: '4');
+  final _name = TextEditingController(text: '4.0.0');
   final _apkUrl = TextEditingController();
   final _bucket =
       TextEditingController(text: 'jadwal-pintar.firebasestorage.app');
