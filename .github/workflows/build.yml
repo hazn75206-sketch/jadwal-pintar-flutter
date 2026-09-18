@@ -227,6 +227,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout (wajib untuk gh release)
+        uses: actions/checkout@v4
+
       - name: Unduh kedua APK
         uses: actions/download-artifact@v4
         with:
