@@ -868,17 +868,81 @@ class _UpdateOverlayState extends State<_UpdateOverlay> {
             ListenableBuilder(
               listenable: widget.downloader,
               builder: (context, _) {
-                final downloading = widget.downloader.status ==
+                final downloader = widget.downloader;
+                final downloading = downloader.status ==
                     UpdateDownloadStatus.downloading;
-                final error = widget.downloader.status ==
+                final error = downloader.status ==
                     UpdateDownloadStatus.error;
+                final needsUninstall = downloader.status ==
+                    UpdateDownloadStatus.needsUninstall;
+                // Versi sama/lebih lama terpasang: tawarkan hapus dulu.
+                if (needsUninstall) {
+                  return Column(
+                    children: [
+                      Text(
+                        'APK versi ${downloader.archiveCode} valid, tapi '
+                        'versi ${downloader.installedCode} sudah terpasang. '
+                        'Hapus versi lama lalu pasang dari folder Download?',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFF97AAC8),
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton(
+                        onPressed: () async {
+                          await downloader.uninstallOld();
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Setelah terhapus, buka file APK di folder '
+                                  'Download untuk memasang.',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text('Hapus versi lama'),
+                      ),
+                      if (!force)
+                        TextButton(
+                          onPressed: () {
+                            setState(() => _dismissed = true);
+                            widget.onDismissed?.call();
+                          },
+                          child: const Text(
+                            'Nanti saja',
+                            style:
+                                TextStyle(color: Color(0xFF97AAC8)),
+                          ),
+                        ),
+                    ],
+                  );
+                }
                 return Column(
                   children: [
+                    if (downloading &&
+                        downloader.progress != null) ...[
+                      LinearProgressIndicator(
+                        value: downloader.progress,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${((downloader.progress ?? 0) * 100).round()}%',
+                        style: const TextStyle(
+                          color: Color(0xFF97AAC8),
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
                     FilledButton(
                       onPressed: downloading
                           ? null
                           : () async {
-                              final err = await widget.downloader
+                              final err = await downloader
                                   .downloadAndOpen(apkUrl, versionName);
                               if (err != null && context.mounted) {
                                 ScaffoldMessenger.of(context)
