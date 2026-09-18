@@ -10,6 +10,8 @@ import '../../core/prefs.dart';
 import '../../core/sfx.dart';
 import '../schedule_provider.dart';
 import '../session.dart';
+import '../user_theme_provider.dart';
+import 'glass_panel.dart';
 import 'info_sheets.dart';
 import 'theme_sheet.dart';
 
@@ -146,11 +148,15 @@ class _AccountSheetState extends ConsumerState<AccountSheet> {
     final session = ref.watch(sessionProvider);
     final loggedIn = session.status == SessionStatus.loggedIn &&
         (session.name.isNotEmpty || session.email.isNotEmpty);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: loggedIn ? _profileView(context, ref, session) : _loginView(),
+    return GlassPanel(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: SingleChildScrollView(
+            child: loggedIn
+                ? _profileView(context, ref, session)
+                : _loginView(),
+          ),
         ),
       ),
     );
@@ -333,9 +339,12 @@ class _AccountSheetState extends ConsumerState<AccountSheet> {
   }
 
   void _openSheet(Widget sheet) {
+    final glass =
+        ref.read(userThemeProvider).preset == ThemePreset.glass;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: glass ? Colors.transparent : null,
       builder: (_) => sheet,
     );
   }

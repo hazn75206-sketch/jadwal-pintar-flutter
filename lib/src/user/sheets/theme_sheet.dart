@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../theme.dart';
 import '../user_theme_provider.dart';
+import 'glass_panel.dart';
 
 /// Modal pilih tema (cermin #themeModal): 8 preset + custom + terang.
 class ThemeSheet extends ConsumerWidget {
@@ -55,13 +56,14 @@ class ThemeSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = ref.watch(userThemeProvider);
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+    return GlassPanel(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               Text(
                 'Pilih Tema',
                 style: Theme.of(context)
@@ -117,6 +119,7 @@ class ThemeSheet extends ConsumerWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

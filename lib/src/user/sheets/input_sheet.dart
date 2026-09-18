@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/sfx.dart';
 import '../schedule_model.dart';
 import '../schedule_provider.dart';
+import 'glass_panel.dart';
 
 /// Modal input pelajaran (cermin #modal native): dropdown hari custom +
 /// baris mapel dinamis (+ di baris terakhir, x di lainnya).
@@ -72,7 +73,8 @@ class _InputSheetState extends ConsumerState<InputSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return GlassPanel(
+      child: SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
           left: 20,
@@ -172,6 +174,7 @@ class _InputSheetState extends ConsumerState<InputSheet> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

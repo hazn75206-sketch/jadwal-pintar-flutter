@@ -114,9 +114,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _gateShown = true;
       Future<void>.delayed(const Duration(milliseconds: 300), () {
         if (!mounted) return;
+        final glass =
+            ref.read(userThemeProvider).preset == ThemePreset.glass;
         showModalBottomSheet<void>(
           context: context,
           isScrollControlled: true,
+          backgroundColor: glass ? Colors.transparent : null,
           builder: (_) => const AccountSheet(),
         ).then((_) {
           final current = ref.read(sessionProvider);
@@ -170,9 +173,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _openSheet(Widget sheet) {
     Sfx.play('pop');
+    final glass =
+        ref.read(userThemeProvider).preset == ThemePreset.glass;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: glass ? Colors.transparent : null,
       builder: (_) => sheet,
     );
   }

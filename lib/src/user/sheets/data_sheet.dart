@@ -9,6 +9,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/sfx.dart';
 import '../schedule_model.dart';
 import '../schedule_provider.dart';
+import 'glass_panel.dart';
 
 /// Modal manajemen data (cermin #dataModal): jam masuk, ekspor, impor.
 class DataSheet extends ConsumerStatefulWidget {
@@ -119,7 +120,8 @@ class _DataSheetState extends ConsumerState<DataSheet> {
     final startTime = ref.watch(
       scheduleProvider.select((s) => s.startTime),
     );
-    return SafeArea(
+    return GlassPanel(
+      child: SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: SingleChildScrollView(
@@ -184,6 +186,7 @@ class _DataSheetState extends ConsumerState<DataSheet> {
             ],
           ),
         ),
+      ),
       ),
     );
   }
