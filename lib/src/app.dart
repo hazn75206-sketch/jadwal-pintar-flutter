@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'admin/theme.dart';
@@ -17,6 +18,9 @@ class JadwalPintarApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (flavor == AppFlavor.admin) {
+      _applySystemBars(
+        MediaQuery.platformBrightnessOf(context) == Brightness.light,
+      );
       return MaterialApp(
         title: flavor.title,
         debugShowCheckedModeBanner: false,
@@ -27,6 +31,7 @@ class JadwalPintarApp extends ConsumerWidget {
       );
     }
     final userTheme = ref.watch(userThemeProvider);
+    _applySystemBars(userTheme.isLight);
     return MaterialApp(
       title: flavor.title,
       debugShowCheckedModeBanner: false,
@@ -77,6 +82,21 @@ class BootErrorScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Status/nav bar transparan menyatu tema (edge-to-edge).
+/// Dipanggil tiap build agar ikon bar mengikuti terang/gelap tema.
+void _applySystemBars(bool isLight) {
+  SystemChrome.setSystemUIOverlayStyle(
+    SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness:
+          isLight ? Brightness.dark : Brightness.light,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness:
+          isLight ? Brightness.dark : Brightness.light,
+    ),
+  );
 }
 
 /// Status koneksi Firebase untuk layar bootstrap Fase 0.
