@@ -10,6 +10,7 @@ abstract final class Rtdb {
   static const String userProfiles = 'userProfiles';
   static const String userAccess = 'userAccess';
   static const String deviceBans = 'deviceBans';
+  static const String userDevices = 'userDevices';
   static const String adminAuditLogs = 'adminAuditLogs';
   static const String users = 'users';
   static const String jadwal = 'jadwal';

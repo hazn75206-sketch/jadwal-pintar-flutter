@@ -212,6 +212,42 @@ class UserProfile {
       '$name $email $appVersion $deviceModel $osVersion $deviceIdHash';
 }
 
+/// Satu perangkat milik akun (multi-device): 1 akun bisa punya
+/// banyak HP (mis. RMX2189 + S688LN), masing-masing bisa diblokir
+/// terpisah lewat hash-nya. Node: userDevices/{uid}/{hash}.
+class UserDevice {
+  const UserDevice({
+    required this.hash,
+    this.deviceModel = '-',
+    this.appVersion = '-',
+    this.lastSeenAt = 0,
+    this.online = false,
+  });
+
+  final String hash;
+  final String deviceModel;
+  final String appVersion;
+  final int lastSeenAt;
+  final bool online;
+
+  factory UserDevice.fromMap(String hash, Map<String, dynamic> map) {
+    return UserDevice(
+      hash: hash,
+      deviceModel: _str(map['deviceModel'], '-'),
+      appVersion: _str(map['appVersion'], '-'),
+      lastSeenAt: _int(map['lastSeenAt']),
+      online: map['online'] == true,
+    );
+  }
+
+  bool isOnlineNow() =>
+      lastSeenAt > 0 &&
+      DateTime.now().millisecondsSinceEpoch - lastSeenAt < 120000;
+
+  String shortHash() =>
+      hash.length >= 12 ? '${hash.substring(0, 12)}…' : '-';
+}
+
 class UserAccess {
   const UserAccess({
     this.enabled = true,

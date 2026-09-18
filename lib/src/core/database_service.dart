@@ -119,6 +119,37 @@ class DatabaseService {
     return DeviceBan.fromMap(rtdbMap(snapshot.value));
   }
 
+  /// Daftar perangkat milik 1 akun (multi-device). Butuh rules v3.
+  Future<Map<String, UserDevice>> loadUserDevices(String uid) async {
+    final snapshot =
+        await _root.child('${Rtdb.userDevices}/$uid').get();
+    final out = <String, UserDevice>{};
+    final raw = snapshot.value;
+    if (raw is Map) {
+      raw.forEach((key, value) {
+        out['$key'] = UserDevice.fromMap('$key', rtdbMap(value));
+      });
+    }
+    return out;
+  }
+
+  /// Catat/perbarui 1 perangkat milik akun (merge; perangkat lain utuh).
+  Future<void> writeDevice(
+    String uid,
+    String hash,
+    Map<String, Object?> map,
+  ) =>
+      _root.child('${Rtdb.userDevices}/$uid/$hash').update(map);
+
+  /// Tandai perangkat online + otomatis offline saat koneksi putus.
+  Future<void> armDeviceOfflineMarker(String uid, String hash) => _root
+      .child('${Rtdb.userDevices}/$uid/$hash')
+      .onDisconnect()
+      .update(<String, Object?>{
+        'online': false,
+        'lastSeenAt': ServerValue.timestamp,
+      });
+
   // ---------- Tulis ----------
 
   Future<void> saveSchedule(String uid, String json) =>

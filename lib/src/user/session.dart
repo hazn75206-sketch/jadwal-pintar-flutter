@@ -273,6 +273,7 @@ class SessionController extends StateNotifier<SessionState> {
       final now = DateTime.now().millisecondsSinceEpoch;
       final createdAt =
           user.metadata.creationTime?.millisecondsSinceEpoch ?? now;
+      final model = await deviceLabel();
       await _db.writeProfile(uid, <String, Object?>{
         'name': (user.displayName?.isNotEmpty ?? false)
             ? user.displayName!
@@ -284,8 +285,8 @@ class SessionController extends StateNotifier<SessionState> {
         'lastLoginAt': now,
         'lastSeenAt': now,
         'online': true,
-        'appVersion': '3.0.0+3',
-        'deviceModel': await deviceLabel(),
+        'appVersion': '4.0.0',
+        'deviceModel': model,
         if (_deviceHash != null && _deviceHash!.isNotEmpty)
           'deviceIdHash': _deviceHash!
         else
@@ -293,6 +294,17 @@ class SessionController extends StateNotifier<SessionState> {
       });
       await _db.updatePresence(uid, true);
       await _db.armOfflineMarker(uid);
+      // Multi-device: catat HP ini tanpa menghapus HP lain di akun sama.
+      final hash = _deviceHash;
+      if (hash != null && hash.isNotEmpty) {
+        await _db.writeDevice(uid, hash, <String, Object?>{
+          'deviceModel': model,
+          'appVersion': '4.0.0',
+          'lastSeenAt': now,
+          'online': true,
+        });
+        await _db.armDeviceOfflineMarker(uid, hash);
+      }
     } catch (_) {}
   }
 

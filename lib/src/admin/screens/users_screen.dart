@@ -150,6 +150,13 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     final bans = ref.read(bansProvider).valueOrNull ?? const {};
     final banned = bans.containsKey(user.deviceIdHash);
     final online = user.isOnlineNow();
+    // Daftar HP milik akun ini (multi-device). Gagal baca = anggap kosong
+    // (fallback baris hash tunggal di bawah).
+    Map<String, UserDevice> devices = const {};
+    try {
+      devices =
+          await ref.read(databaseProvider).loadUserDevices(user.uid);
+    } catch (_) {}
 
     await showDialog<void>(
       context: context,
@@ -188,15 +195,25 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               _row('Perangkat', user.deviceModel),
               _row('OS', user.osVersion),
               _row(
-                'Device ID',
-                user.deviceIdHash.isEmpty
-                    ? (user.deviceIdMissing
-                        ? 'tidak terbaca (perlu diperiksa)'
-                        : '-')
-                    : user.shortDeviceId(),
+                'Perangkat terdaftar',
+                devices.isEmpty ? '-' : '${devices.length}',
               ),
-              _row('Status perangkat',
-                  banned ? 'DIBLOKIR' : 'Bersih'),
+              // Pilih blokir PER perangkat (mis. RMX2189 saja).
+              for (final device in devices.values)
+                _deviceRow(context, ref, user, device,
+                    bans.containsKey(device.hash)),
+              if (devices.isEmpty)
+                _row(
+                  'Device ID',
+                  user.deviceIdHash.isEmpty
+                      ? (user.deviceIdMissing
+                          ? 'tidak terbaca (perlu diperiksa)'
+                          : '-')
+                      : user.shortDeviceId(),
+                ),
+              if (devices.isEmpty)
+                _row('Status perangkat',
+                    banned ? 'DIBLOKIR' : 'Bersih'),
             ],
           ),
         ),
@@ -205,20 +222,23 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Tutup'),
           ),
-          TextButton(
-            onPressed: user.deviceIdHash.isEmpty
-                ? null
-                : () {
-                    Navigator.of(dialogContext).pop();
-                    _toggleBan(ref, user, banned);
-                  },
-            child: Text(
-              banned ? 'Buka blokir perangkat' : 'Blokir perangkat',
-              style: TextStyle(
-                color: banned ? Colors.green : Theme.of(context).colorScheme.error,
+          // Tombol warisan: hanya bila daftar perangkat kosong
+          // (HP belum login ulang sejak update multi-device).
+          if (devices.isEmpty)
+            TextButton(
+              onPressed: user.deviceIdHash.isEmpty
+                  ? null
+                  : () {
+                      Navigator.of(dialogContext).pop();
+                      _toggleBan(ref, user, banned);
+                    },
+              child: Text(
+                banned ? 'Buka blokir perangkat' : 'Blokir perangkat',
+                style: TextStyle(
+                  color: banned ? Colors.green : Theme.of(context).colorScheme.error,
+                ),
               ),
             ),
-          ),
           TextButton(
             onPressed: () {
               Navigator.of(dialogContext).pop();
@@ -248,6 +268,123 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         ],
       ),
     );
+  }
+
+  /// Baris 1 perangkat + tombol Blokir/Buka khusus hash itu.
+  Widget _deviceRow(
+    BuildContext context,
+    WidgetRef ref,
+    UserProfile user,
+    UserDevice device,
+    bool banned,
+  ) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: device.isOnlineNow() ? Colors.green : scheme.outline,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  device.deviceModel,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+                Text(
+                  'v${device.appVersion} • '
+                  '${_formatTime(device.lastSeenAt)} • '
+                  '${device.shortHash()}',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _toggleBanHash(ref, user, device, banned);
+            },
+            child: Text(
+              banned ? 'Buka' : 'Blokir',
+              style: TextStyle(
+                color: banned ? Colors.green : scheme.error,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Blokir/buka 1 hash perangkat (bukan seluruh akun).
+  Future<void> _toggleBanHash(
+    WidgetRef ref,
+    UserProfile user,
+    UserDevice device,
+    bool banned,
+  ) async {
+    final admin = FirebaseAuth.instance.currentUser;
+    if (admin == null) return;
+    final db = ref.read(databaseProvider);
+    try {
+      final tag = device.hash.length >= 8
+          ? device.hash.substring(0, 8)
+          : device.hash;
+      if (banned) {
+        await db.removeDeviceBan(device.hash);
+        await db.writeAudit(
+          adminUid: admin.uid,
+          adminEmail: admin.email ?? '',
+          action: 'unban_device_${user.uid}_$tag',
+        );
+      } else {
+        await db.setDeviceBan(device.hash, <String, Object?>{
+          'banned': true,
+          'uid': user.uid,
+          'name': user.name,
+          'email': user.email,
+          'deviceModel': device.deviceModel,
+          'createdAt':
+              DateTime.now().millisecondsSinceEpoch,
+          'createdBy': admin.uid,
+        });
+        await db.writeAudit(
+          adminUid: admin.uid,
+          adminEmail: admin.email ?? '',
+          action: 'ban_device_${user.uid}_$tag',
+        );
+      }
+      await Sfx.play('success');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            banned
+                ? 'Blokir ${device.deviceModel} dibuka.'
+                : '${device.deviceModel} diblokir.',
+          ),
+        ),
+      );
+    } catch (e) {
+      await Sfx.play('error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal: $e')),
+      );
+    }
   }
 
   Widget _row(String label, String value) {
