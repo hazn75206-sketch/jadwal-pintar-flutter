@@ -175,38 +175,3 @@ jobs:
           name: jadwal-pintar-flutter-admin-apk
           path: build/app/outputs/flutter-apk/app-admin-release.apk
           if-no-files-found: warn
-
-  package-zip:
-    runs-on: ubuntu-latest
-    needs: [build-user, build-admin]
-    permissions:
-      actions: write
-    steps:
-      - name: Unduh kedua APK
-        uses: actions/download-artifact@v4
-        with:
-          path: apks
-
-      - name: Bungkus jadi 1 ZIP (user + admin)
-        run: |
-          ls -R apks
-          mkdir -p rilis
-          cp apks/jadwal-pintar-flutter-user-apk/*.apk "rilis/jadwal-pintar-user-v3.0.0+3.apk"
-          cp apks/jadwal-pintar-flutter-admin-apk/*.apk "rilis/jadwal-pintar-admin-v3.0.0+3.apk"
-          zip -j jadwal-pintar-apk.zip rilis/*.apk
-          unzip -l jadwal-pintar-apk.zip
-
-      - name: Upload ZIP gabungan
-        uses: actions/upload-artifact@v4
-        with:
-          name: jadwal-pintar-apk
-          path: jadwal-pintar-apk.zip
-
-      - name: Hapus artifact satuan (sisakan 1 ZIP)
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          IDS=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts" -q '.artifacts[] | select(.name != "jadwal-pintar-apk") | .id')
-          for ID in $IDS; do
-            gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$ID" && echo "hapus artifact $ID"
-          done
