@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../theme.dart';
 import '../user_theme_provider.dart';
 
 /// Panel kaca iPhone untuk bottom sheet: blur latar + tint + border atas.

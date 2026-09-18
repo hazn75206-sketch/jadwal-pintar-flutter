@@ -10,6 +10,7 @@ import '../../core/prefs.dart';
 import '../../core/sfx.dart';
 import '../schedule_provider.dart';
 import '../session.dart';
+import '../theme.dart';
 import '../user_theme_provider.dart';
 import 'glass_panel.dart';
 import 'info_sheets.dart';
