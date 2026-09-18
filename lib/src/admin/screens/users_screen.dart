@@ -158,6 +158,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           await ref.read(databaseProvider).loadUserDevices(user.uid);
     } catch (_) {}
 
+    if (!context.mounted) return;
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(

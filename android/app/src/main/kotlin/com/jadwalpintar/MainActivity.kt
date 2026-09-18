@@ -100,40 +100,50 @@ class MainActivity : FlutterActivity() {
 
                     "getArchiveVersionCode" -> {
                         val path = call.argument<String>("path")
-                        try {
-                            val info =
-                                packageManager.getPackageArchiveInfo(
-                                    path,
-                                    signingFlags(),
-                                )
-                            result.success(
-                                if (info == null) -1L
-                                else versionCodeOf(info),
-                            )
-                        } catch (e: Exception) {
+                        if (path == null) {
                             result.success(-1L)
+                        } else {
+                            try {
+                                val info =
+                                    packageManager.getPackageArchiveInfo(
+                                        path,
+                                        signingFlags(),
+                                    )
+                                result.success(
+                                    if (info == null) -1L
+                                    else versionCodeOf(info),
+                                )
+                            } catch (e: Exception) {
+                                result.success(-1L)
+                            }
                         }
                     }
 
                     "signaturesMatch" -> {
                         val path = call.argument<String>("path")
-                        try {
-                            val installed = packageManager.getPackageInfo(
-                                packageName,
-                                signingFlags(),
-                            )
-                            val archive =
-                                packageManager.getPackageArchiveInfo(
-                                    path,
-                                    signingFlags(),
-                                )
-                            val a = firstSignature(installed)
-                            val b = firstSignature(archive)
-                            result.success(
-                                a != null && b != null && a.contentEquals(b),
-                            )
-                        } catch (e: Exception) {
+                        if (path == null) {
                             result.success(false)
+                        } else {
+                            try {
+                                val installed =
+                                    packageManager.getPackageInfo(
+                                        packageName,
+                                        signingFlags(),
+                                    )
+                                val archive =
+                                    packageManager.getPackageArchiveInfo(
+                                        path,
+                                        signingFlags(),
+                                    )
+                                val a = firstSignature(installed)
+                                val b = firstSignature(archive)
+                                result.success(
+                                    a != null && b != null &&
+                                        a.contentEquals(b),
+                                )
+                            } catch (e: Exception) {
+                                result.success(false)
+                            }
                         }
                     }
 
