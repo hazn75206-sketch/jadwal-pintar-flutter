@@ -11,6 +11,7 @@ import '../../core/sfx.dart';
 import '../schedule_model.dart';
 import '../schedule_provider.dart';
 import '../session.dart';
+import '../theme.dart';
 import '../user_theme_provider.dart';
 import '../update_download.dart';
 import '../sheets/account_sheet.dart';
