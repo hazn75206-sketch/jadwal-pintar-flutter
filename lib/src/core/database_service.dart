@@ -111,6 +111,14 @@ class DatabaseService {
     return value is String ? value : '';
   }
 
+  /// Baca sekali status ban perangkat (untuk tolak-login di HP banned).
+  Future<DeviceBan?> loadDeviceBan(String hash) async {
+    final snapshot =
+        await _root.child('${Rtdb.deviceBans}/$hash').get();
+    if (!snapshot.exists) return null;
+    return DeviceBan.fromMap(rtdbMap(snapshot.value));
+  }
+
   // ---------- Tulis ----------
 
   Future<void> saveSchedule(String uid, String json) =>

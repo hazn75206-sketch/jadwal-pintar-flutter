@@ -89,6 +89,11 @@ class _AccountSheetState extends ConsumerState<AccountSheet> {
       await Sfx.play('success');
       if (!mounted) return;
       Navigator.of(context).pop();
+    } else if (error.contains('diblokir')) {
+      // Toast untuk penolakan login di perangkat banned (aturan user).
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
     }
   }
 

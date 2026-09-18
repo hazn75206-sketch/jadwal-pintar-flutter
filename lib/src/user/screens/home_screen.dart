@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,7 @@ import '../../core/sfx.dart';
 import '../schedule_model.dart';
 import '../schedule_provider.dart';
 import '../session.dart';
+import '../user_theme_provider.dart';
 import '../update_download.dart';
 import '../sheets/account_sheet.dart';
 import '../sheets/data_sheet.dart';
@@ -239,7 +241,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
     if (session.status == SessionStatus.locked) {
-      return const Scaffold(body: _DeviceLockOverlay());
+      // P4: popup TENGAH layar, tanpa tombol, tidak bisa dihilangkan.
+      return const PopScope(
+        canPop: false,
+        child: Scaffold(body: _DeviceLockOverlay()),
+      );
     }
 
     final today = _todayName();
@@ -251,14 +257,42 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         update.versionCode > kAppVersionCode &&
         update.apkUrl.isNotEmpty;
 
+    // P3: maintenance menutup SELURUH layar termasuk FAB (cermin native).
+    if (showMaintenance) {
+      return Scaffold(
+        body: _MaintenanceOverlay(
+          title: maintenance?.title ?? 'Aplikasi sedang diperbaiki',
+          message: maintenance?.message ?? '',
+        ),
+      );
+    }
+
+    // P5: preset Glass = efek kaca iPhone (blur + border + glow).
+    final glass =
+        ref.watch(userThemeProvider).preset == ThemePreset.glass;
+
     return Scaffold(
       body: SafeArea(
         child: Stack(
           children: [
+            // Glow radial ala body native (yang di-blur kartu kaca).
+            if (glass) ...const [
+              Positioned(
+                top: -130,
+                left: -110,
+                child: _GlowBlob(color: Color(0xFF007AFF)),
+              ),
+              Positioned(
+                bottom: -150,
+                right: -120,
+                child: _GlowBlob(color: Color(0xFF5856D6)),
+              ),
+            ],
             CustomScrollView(
               controller: _scrollController,
               slivers: [
-                SliverToBoxAdapter(child: _header(session)),
+                SliverToBoxAdapter(
+                    child: _headerWrapped(session, glass)),
                 if (_menuOpen)
                   SliverToBoxAdapter(
                     child: _MenuPanel(
@@ -273,6 +307,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       isToday: day == today,
                       lessons: schedule.data.days[day] ?? const <String>[],
                       locked: schedule.locked,
+                      glass: glass,
                       countdown: day == today
                           ? nextLessonToday(
                               schedule.data.days[day] ?? const <String>[],
@@ -309,11 +344,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
               ],
             ),
-            if (showMaintenance)
-              _MaintenanceOverlay(
-                title: maintenance?.title ?? 'Aplikasi sedang diperbaiki',
-                message: maintenance?.message ?? '',
-              ),
             if (showUpdate)
               _UpdateOverlay(update: update, downloader: _downloader),
           ],
@@ -327,6 +357,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: const FaIcon(FontAwesomeIcons.plus),
       ),
     );
+  }
+
+  Widget _headerWrapped(SessionState session, bool glass) {
+    final bar = _header(session);
+    if (!glass) return bar;
+    return _Glass(radius: 20, child: bar);
   }
 
   Widget _header(SessionState session) {
@@ -421,6 +457,61 @@ class _MenuPanel extends ConsumerWidget {
   }
 }
 
+/// Bungkus kaca iPhone: blur latar + tint gelap + border hairline putih.
+/// Cermin `.card` + `--glass-border` + `backdrop-filter` native.
+class _Glass extends StatelessWidget {
+  const _Glass({required this.child, this.radius = 24});
+
+  final Widget child;
+  final double radius;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0x8C1C1C1E),
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(
+              color: const Color(0x1FFFFFFF),
+            ),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// Glow radial di latar (yang di-blur kartu kaca).
+/// Cermin `background-image: radial-gradient(...)` body native.
+class _GlowBlob extends StatelessWidget {
+  const _GlowBlob({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: 320,
+        height: 320,
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            colors: [
+              color.withValues(alpha: 0.22),
+              color.withValues(alpha: 0.0),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _DayCard extends StatelessWidget {
   const _DayCard({
     super.key,
@@ -428,6 +519,7 @@ class _DayCard extends StatelessWidget {
     required this.isToday,
     required this.lessons,
     required this.locked,
+    required this.glass,
     required this.countdown,
     required this.onAdd,
     required this.onEdit,
@@ -438,6 +530,7 @@ class _DayCard extends StatelessWidget {
   final bool isToday;
   final List<String> lessons;
   final bool locked;
+  final bool glass;
   final ({String name, int minutesLeft})? countdown;
   final VoidCallback onAdd;
   final ValueChanged<int> onEdit;
@@ -446,13 +539,7 @@ class _DayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
-      child: Card(
-        color: isToday ? scheme.primaryContainer : null,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+    final content = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -587,9 +674,19 @@ class _DayCard extends StatelessWidget {
                   label: const Text('Tambah Pelajaran'),
                 ),
             ],
-          ),
-        ),
-      ),
+          );
+    final body = Padding(
+      padding: const EdgeInsets.all(16),
+      child: content,
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 6),
+      child: glass
+          ? _Glass(child: body)
+          : Card(
+              color: isToday ? scheme.primaryContainer : null,
+              child: body,
+            ),
     );
   }
 }
@@ -602,48 +699,47 @@ class _MaintenanceOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned.fill(
-      child: Container(
-        color: const Color(0xFF080C18),
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: const Icon(
-                Icons.handyman_outlined,
-                size: 38,
-                color: Colors.white,
-              ),
+    // Dipakai sebagai body Scaffold penuh (bukan di dalam Stack).
+    return Container(
+      color: const Color(0xFF080C18),
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(22),
             ),
-            const SizedBox(height: 22),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFFF7F9FF),
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-              ),
+            child: const Icon(
+              Icons.handyman_outlined,
+              size: 38,
+              color: Colors.white,
             ),
-            const SizedBox(height: 14),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFF97AAC8),
-                fontSize: 14,
-                height: 1.7,
-              ),
+          ),
+          const SizedBox(height: 22),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFFF7F9FF),
+              fontSize: 24,
+              fontWeight: FontWeight.w800,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 14),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF97AAC8),
+              fontSize: 14,
+              height: 1.7,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -761,60 +857,79 @@ class _UpdateOverlayState extends State<_UpdateOverlay> {
   }
 }
 
+/// Popup blokir perangkat: TENGAH layar, TANPA tombol, tidak bisa
+/// dihilangkan (aturan user). Back-button dikunci via PopScope pemanggil.
 class _DeviceLockOverlay extends StatelessWidget {
   const _DeviceLockOverlay();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFF080A12),
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 72,
-            height: 72,
+      color: const Color(0xFF04060C),
+      padding: const EdgeInsets.all(28),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 340),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(24, 30, 24, 30),
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Theme.of(context)
-                  .colorScheme
-                  .error
-                  .withValues(alpha: 0.12),
+              color: const Color(0xFF10141F),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: const Color(0x1FFFFFFF),
+              ),
             ),
-            child: Icon(
-              Icons.block_outlined,
-              size: 30,
-              color: Theme.of(context).colorScheme.error,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .error
+                        .withValues(alpha: 0.12),
+                  ),
+                  child: Icon(
+                    Icons.block_outlined,
+                    size: 30,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  'PERANGKAT DIBLOKIR',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Perangkat ini diblokir',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Perangkat ini tidak diizinkan mengakses Jadwal Pintar. '
+                  'Hubungi administrator.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: Color(0xFF97AAC8), fontSize: 13),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 14),
-          Text(
-            'PERANGKAT DIBLOKIR',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.error,
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 2,
-            ),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Perangkat ini diblokir',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Perangkat ini tidak diizinkan mengakses Jadwal Pintar. '
-            'Hubungi administrator.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Color(0xFF97AAC8), fontSize: 13),
-          ),
-        ],
+        ),
       ),
     );
   }

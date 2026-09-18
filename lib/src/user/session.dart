@@ -89,6 +89,9 @@ class SessionController extends StateNotifier<SessionState> {
   bool _banReady = false;
   String? _deviceHash;
   bool _protectionOn = false;
+  /// UID yang jadwal cloud-nya sudah dipulihkan sekali pada sesi login ini.
+  /// Cegah restore berulang (P1); reset saat logout/ganti akun.
+  String? _restoredUid;
 
   AuthService get _auth => _ref.read(authServiceProvider);
   DatabaseService get _db => _ref.read(databaseProvider);
@@ -140,6 +143,9 @@ class SessionController extends StateNotifier<SessionState> {
       return;
     }
     _cacheProfile(user);
+    // Profil + presence + marker offline (cermin writeUserProfile native).
+    // Tanpa ini admin tidak bisa memblokir perangkat (hash tak tercatat).
+    unawaited(_writeProfile(user));
     // Offline: langsung tampil dari cache tanpa menunggu gate.
     _checkOffline().then((offline) {
       if (offline) {
@@ -250,12 +256,44 @@ class SessionController extends StateNotifier<SessionState> {
   void _detachGates() {
     _gateTimer?.cancel();
     _gateTimer = null;
+    _restoredUid = null;
     _accessSub?.cancel();
     _banSub?.cancel();
     _configSub?.cancel();
     _accessSub = null;
     _banSub = null;
     _configSub = null;
+  }
+
+  /// Tulis profil ke userProfiles + tandai online (cermin native).
+  /// set() penuh seperti native (bukan update) agar field usang terhapus.
+  Future<void> _writeProfile(User user) async {
+    try {
+      final uid = user.uid;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final createdAt =
+          user.metadata.creationTime?.millisecondsSinceEpoch ?? now;
+      await _db.writeProfile(uid, <String, Object?>{
+        'name': (user.displayName?.isNotEmpty ?? false)
+            ? user.displayName!
+            : (await _prefs).getString(PrefKeys.cachedName) ?? '',
+        'email': (user.email?.isNotEmpty ?? false)
+            ? user.email!
+            : (await _prefs).getString(PrefKeys.cachedEmail) ?? '',
+        'createdAt': createdAt,
+        'lastLoginAt': now,
+        'lastSeenAt': now,
+        'online': true,
+        'appVersion': '3.0.0+3',
+        'deviceModel': await deviceLabel(),
+        if (_deviceHash != null && _deviceHash!.isNotEmpty)
+          'deviceIdHash': _deviceHash!
+        else
+          'deviceIdMissing': true,
+      });
+      await _db.updatePresence(uid, true);
+      await _db.armOfflineMarker(uid);
+    } catch (_) {}
   }
 
   void _cacheProfile(User user) {
@@ -286,6 +324,19 @@ class SessionController extends StateNotifier<SessionState> {
       email: email,
       photo: photo,
     );
+    // P1: pulihkan jadwal cloud sekali per login bila online.
+    // Tanpa ini install baru + login akun berisi = jadwal kosong.
+    final uid = user?.uid;
+    if (uid != null && uid.isNotEmpty && _restoredUid != uid) {
+      _restoredUid = uid;
+      _checkOffline().then((offline) {
+        if (!offline) {
+          unawaited(
+            _ref.read(scheduleProvider.notifier).restoreFromCloud(),
+          );
+        }
+      });
+    }
   }
 
   void _applySignedOut() {
@@ -354,6 +405,35 @@ class SessionController extends StateNotifier<SessionState> {
   Future<String?> loginWithGoogle() async {
     try {
       await _auth.signInWithGoogle();
+      // P4: tolak login di perangkat banned (aturan user) — walau akunnya
+      // berbeda. deviceBans hanya bisa dibaca saat login (rules),
+      // jadi cek sekali tepat setelah sign-in berhasil.
+      final hash = _deviceHash;
+      if (hash != null && hash.isNotEmpty) {
+        DeviceBan? ban;
+        try {
+          ban = await _db.loadDeviceBan(hash).timeout(
+                const Duration(seconds: 8),
+                onTimeout: () => null,
+              );
+        } catch (_) {
+          ban = null;
+        }
+        if (ban != null && ban.banned) {
+          final prefs = await _prefs;
+          await prefs.setBool(PrefKeys.banLatch(hash), true);
+          await _ref.read(scheduleProvider.notifier).wipeLocal();
+          _detachGates();
+          await _auth.signOut();
+          _restoredUid = null;
+          state = SessionState(
+            status: SessionStatus.gate,
+            loginSkipped: state.loginSkipped,
+          );
+          await Sfx.play('error');
+          return 'Tidak dapat login karena perangkat Anda telah diblokir.';
+        }
+      }
       return null;
     } catch (e) {
       await Sfx.play('error');
