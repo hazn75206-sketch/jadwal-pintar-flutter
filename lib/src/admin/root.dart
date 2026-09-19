@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../core/providers.dart';
 import 'shell.dart';
@@ -81,7 +80,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     const bgOffWhite = Color(0xFFF3F8F3);
     const bgMintEnd = Color(0xFFEAF3EC);
     const primaryGreen = Color(0xFF0F7A4A);
-    const primaryGreenDark = Color(0xFF0B5C38);
     const charcoal = Color(0xFF1E2E2B);
     const muted = Color(0xFF6B7F7C);
 
