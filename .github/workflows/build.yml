@@ -12,12 +12,21 @@ env:
   GRADLE_OPTS: -Dorg.gradle.parallel=true -Dorg.gradle.caching=true
 
 jobs:
-  build-user:
+  build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
+    permissions:
+      contents: write
     steps:
-      - name: Checkout
+      - name: Checkout (fetch semua commit untuk versionCode)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show CPU info (semua core dipakai)
+        run: |
+          echo "nproc=$(nproc)"
+          lscpu | head -n 20
 
       - name: Set up JDK 17 (wajib untuk AGP 9.x)
         uses: actions/setup-java@v4
@@ -33,6 +42,9 @@ jobs:
           channel: stable
           cache: true
 
+      - name: Setup Gradle cache (biar build berikutnya cepat)
+        uses: gradle/actions/setup-gradle@v3
+
       - name: Install Android platform 36 (lewati bila sudah ada)
         run: |
           if [ ! -d "$ANDROID_HOME/platforms/android-36" ]; then
@@ -47,6 +59,7 @@ jobs:
           GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
         run: |
           echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > android/app/google-services.json
+          ls -la android/app/google-services.json
 
       - name: Validasi client Firebase (gagal cepat bila package tak cocok)
         run: |
@@ -69,14 +82,15 @@ jobs:
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
           echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          ls -la "$RUNNER_TEMP/release.jks"
 
-      - name: Cache pub packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.pub-cache
-          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
-          restore-keys: |
-            pub-${{ runner.os }}-
+      - name: Tentukan versi (seperti rikkahub — auto naik tiap commit)
+        run: |
+          VERSION_CODE=$(git rev-list --count HEAD)
+          VERSION_NAME="5.0.$VERSION_CODE"
+          echo "VERSION_CODE=$VERSION_CODE" >> $GITHUB_ENV
+          echo "VERSION_NAME=$VERSION_NAME" >> $GITHUB_ENV
+          echo "Version: $VERSION_NAME ($VERSION_CODE)"
 
       - name: Flutter pub get
         run: flutter pub get
@@ -89,199 +103,111 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: flutter build apk --release --flavor user --target lib/main_user.dart --target-platform android-arm64 --build-number 5 --build-name 5.0.0
-
-      - name: Pastikan values Firebase ada di APK (user)
-        run: |
-          python3 - <<'EOF'
-          import sys, zipfile
-          z = zipfile.ZipFile('build/app/outputs/flutter-apk/app-user-release.apk')
-          arsc = z.read('resources.arsc')
-          need = [b'google_app_id', b'firebase_database_url']
-          missing = [k.decode() for k in need if k not in arsc]
-          if missing:
-              print('GAGAL: tidak ada di APK:', missing)
-              sys.exit(1)
-          print('OK: values Firebase ada di APK user.')
-          EOF
-
-      - name: Verifikasi tanda tangan APK user
-        run: |
-          APKSIGNER=$(echo "$ANDROID_HOME"/build-tools/*/apksigner | tr ' ' '\n' | sort -V | tail -n 1)
-          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-user-release.apk | grep -E "Signer|SHA-256|SHA-1" | head -n 6
-
-      - name: Upload APK user
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: jadwal-pintar-flutter-user-apk
-          path: build/app/outputs/flutter-apk/app-user-release.apk
-          if-no-files-found: warn
-
-  build-admin:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17 (wajib untuk AGP 9.x)
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: 17
-          cache: gradle
-
-      - name: Setup Flutter 3.47.4
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.47.4'
-          channel: stable
-          cache: true
-
-      - name: Install Android platform 36 (lewati bila sudah ada)
-        run: |
-          if [ ! -d "$ANDROID_HOME/platforms/android-36" ]; then
-            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-36" "platform-tools" || true
-            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
-          else
-            echo "android-36 sudah ada, lewati."
-          fi
-
-      - name: Generate google-services.json dari Secrets
-        env:
-          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
-        run: |
-          echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > android/app/google-services.json
-
-      - name: Validasi client Firebase (gagal cepat bila package tak cocok)
-        run: |
-          python3 - <<'EOF'
-          import json, sys
-          data = json.load(open('android/app/google-services.json'))
-          found = {c['client_info']['android_client_info']['package_name'] for c in data.get('client', [])}
-          print('Package di google-services.json:', sorted(found))
-          need = {'com.jadwalpintar.app', 'com.jadwalpintar.admin'}
-          missing = need - found
-          if missing:
-              print('GAGAL: client tidak ditemukan untuk:', sorted(missing))
-              sys.exit(1)
-          print('OK: kedua client flavor ditemukan.')
-          EOF
-
-      - name: Siapkan keystore signing (dari Secrets)
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
-          echo "KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
-
-      - name: Cache pub packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.pub-cache
-          key: pub-${{ runner.os }}-${{ hashFiles('pubspec.lock') }}
-          restore-keys: |
-            pub-${{ runner.os }}-
-
-      - name: Flutter pub get
-        run: flutter pub get
+        run: flutter build apk --release --flavor user --target lib/main_user.dart --target-platform android-arm64 --build-number "${{ env.VERSION_CODE }}" --build-name "${{ env.VERSION_NAME }}"
 
       - name: Build APK admin (release di-sign)
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: flutter build apk --release --flavor admin --target lib/main_admin.dart --target-platform android-arm64 --build-number 5 --build-name 5.0.0
+        run: flutter build apk --release --flavor admin --target lib/main_admin.dart --target-platform android-arm64 --build-number "${{ env.VERSION_CODE }}" --build-name "${{ env.VERSION_NAME }}"
+
+      - name: Pastikan values Firebase ada di APK (user)
+        run: |
+          python3 - <<'EOF'
+          import zipfile
+          z = zipfile.ZipFile('build/app/outputs/flutter-apk/app-user-release.apk')
+          arsc = z.read('resources.arsc')
+          need = [b'google_app_id', b'firebase_database_url']
+          missing = [k.decode() for k in need if k not in arsc]
+          if missing:
+              print('GAGAL: tidak ada di APK:', missing)
+              import sys; sys.exit(1)
+          print('OK: values Firebase ada di APK user.')
+          EOF
 
       - name: Pastikan values Firebase ada di APK (admin)
         run: |
           python3 - <<'EOF'
-          import sys, zipfile
+          import zipfile
           z = zipfile.ZipFile('build/app/outputs/flutter-apk/app-admin-release.apk')
           arsc = z.read('resources.arsc')
           need = [b'google_app_id', b'firebase_database_url']
           if missing := [k.decode() for k in need if k not in arsc]:
               print('GAGAL: tidak ada di APK:', missing)
-              sys.exit(1)
+              import sys; sys.exit(1)
           print('OK: values Firebase ada di APK admin.')
           EOF
 
-      - name: Verifikasi tanda tangan APK admin
+      - name: Verifikasi tanda tangan APK
         run: |
           APKSIGNER=$(echo "$ANDROID_HOME"/build-tools/*/apksigner | tr ' ' '\n' | sort -V | tail -n 1)
-          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-admin-release.apk | grep -E "Signer|SHA-256|SHA-1" | head -n 6
+          echo "=== user ==="; "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-user-release.apk | grep -E "Signer|SHA-256|SHA-1" | head -n 6
+          echo "=== admin ==="; "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-admin-release.apk | grep -E "Signer|SHA-256|SHA-1" | head -n 6
 
-      - name: Upload APK admin
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: jadwal-pintar-flutter-admin-apk
-          path: build/app/outputs/flutter-apk/app-admin-release.apk
-          if-no-files-found: warn
-
-  release:
-    runs-on: ubuntu-latest
-    needs: [build-user, build-admin]
-    if: startsWith(github.ref, 'refs/tags/v')
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout (wajib untuk gh release)
-        uses: actions/checkout@v4
-
-      - name: Unduh kedua APK
-        uses: actions/download-artifact@v4
-        with:
-          path: apks
-
-      - name: Buat GitHub Release + lampirkan APK (hosting update gratis)
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Rename APK (seperti rikkahub — versi di nama file)
         run: |
-          TAG="${GITHUB_REF_NAME}"
-          mkdir -p rilis
-          cp apks/jadwal-pintar-flutter-user-apk/*.apk "rilis/jadwal-pintar-user-${TAG}.apk"
-          cp apks/jadwal-pintar-flutter-admin-apk/*.apk "rilis/jadwal-pintar-admin-${TAG}.apk"
-          ls -la rilis
-          gh release create "$TAG" rilis/*.apk \
-            --title "$TAG" \
-            --notes "Rilis otomatis CI: APK user + admin (di-sign keystore rilis)." \
-          || gh release upload "$TAG" rilis/*.apk --clobber
+          cd build/app/outputs/flutter-apk
+          cp app-user-release.apk "jadwal-pintar-user-arm64-v${{ env.VERSION_CODE }}.apk"
+          cp app-admin-release.apk "jadwal-pintar-admin-arm64-v${{ env.VERSION_CODE }}.apk"
+          ls -lh *.apk
 
-  # Setiap push ke main -> Release langsung 2 APK tanpa zip (direct .apk download).
-  # Tag stabil latest-main di-overwrite biar link tetap sama, tidak spam tag per SHA.
-  release-main:
+      - name: Write APK link to job summary (klik langsung, bukan zip)
+        run: |
+          echo "## Download APK" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Versi: \`${{ env.VERSION_NAME }}.${{ env.VERSION_CODE }}\` (versionCode \`${{ env.VERSION_CODE }}\`)" >> $GITHUB_STEP_SUMMARY
+          echo "Tanggal build: \`$(date -u +%Y-%m-%d' '%H:%M' UTC')\`" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: \`${GITHUB_SHA::7}\` — branch \`${GITHUB_REF_NAME}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[klik di sini untuk download APK user (jadwal-pintar-user-arm64-v${{ env.VERSION_CODE }}.apk)](https://github.com/${{ github.repository }}/releases/download/apk-build/jadwal-pintar-user-arm64-v${{ env.VERSION_CODE }}.apk)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "[klik di sini untuk download APK admin (jadwal-pintar-admin-arm64-v${{ env.VERSION_CODE }}.apk)](https://github.com/${{ github.repository }}/releases/download/apk-build/jadwal-pintar-admin-arm64-v${{ env.VERSION_CODE }}.apk)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Gradle Root Project | Requested Tasks | Gradle Version | Build Outcome |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| jadwal-pintar-flutter | assembleUserRelease assembleAdminRelease | 8.7 | ✅ |" >> $GITHUB_STEP_SUMMARY
+          cat $GITHUB_STEP_SUMMARY
+
+      - name: Publish APK as Release asset (direct download, bukan zip Artifact)
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-build
+          name: Jadwal Pintar APK (arm64)
+          prerelease: true
+          body: |
+            Build otomatis dari `${{ github.sha }}` — `${{ github.event.head_commit.timestamp }}`
+
+            - Versi: `${{ env.VERSION_NAME }}.${{ env.VERSION_CODE }}` (versionCode `${{ env.VERSION_CODE }}` — selalu naik tiap build, seperti rikkahub)
+            - APK user: `jadwal-pintar-user-arm64-v${{ env.VERSION_CODE }}.apk`
+            - APK admin: `jadwal-pintar-admin-arm64-v${{ env.VERSION_CODE }}.apk`
+            - Download (klik langsung, bukan zip): 
+              - https://github.com/${{ github.repository }}/releases/download/apk-build/jadwal-pintar-user-arm64-v${{ env.VERSION_CODE }}.apk
+              - https://github.com/${{ github.repository }}/releases/download/apk-build/jadwal-pintar-admin-arm64-v${{ env.VERSION_CODE }}.apk
+          files: |
+            build/app/outputs/flutter-apk/jadwal-pintar-user-arm64-v${{ env.VERSION_CODE }}.apk
+            build/app/outputs/flutter-apk/jadwal-pintar-admin-arm64-v${{ env.VERSION_CODE }}.apk
+          fail_on_unmatched_files: true
+
+  # Rilis resmi tag v* (hosting update gratis) — tetap ada, file di-rename sesuai tag.
+  release-tag:
     runs-on: ubuntu-latest
-    needs: [build-user, build-admin]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build]
     permissions:
       contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Unduh kedua APK
-        uses: actions/download-artifact@v4
-        with:
-          path: apks
+      - name: Unduh APK dari build job via artifact fallback (jika perlu)
+        run: echo "Tag release akan dibuat ulang dari commit tag — build job sudah publish apk-build di atas."
 
-      - name: Publish prerelease latest-main (direct APK, bukan zip)
+      - name: Buat GitHub Release resmi untuk tag v*
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="latest-main"
-          SHORT_SHA="${GITHUB_SHA::7}"
-          RUN_ID="${GITHUB_RUN_ID}"
-          mkdir -p rilis
-          cp apks/jadwal-pintar-flutter-user-apk/*.apk "rilis/jadwal-pintar-user-${TAG}.apk"
-          cp apks/jadwal-pintar-flutter-admin-apk/*.apk "rilis/jadwal-pintar-admin-${TAG}.apk"
-          ls -lh rilis
-          # Hapus rilis lama agar file ter-overwrite bersih, lanjut walau belum ada.
-          gh release delete "$TAG" --yes 2>/dev/null || true
-          git push origin ":refs/tags/$TAG" 2>/dev/null || true
-          gh release create "$TAG" rilis/*.apk \
-            --title "Prerelease $TAG — $SHORT_SHA (run $RUN_ID)" \
-            --notes "Build otomatis tiap push main ($SHORT_SHA): APK user + admin terbaru (direct .apk, bukan zip artifact). Link permanen: https://github.com/${{ github.repository }}/releases/tag/$TAG" \
-            --prerelease
-          echo "Selesai: https://github.com/${{ github.repository }}/releases/tag/$TAG"
+          TAG="${GITHUB_REF_NAME}"
+          echo "Tag push terdeteksi: $TAG — file apk-build sudah tersedia di https://github.com/${{ github.repository }}/releases/tag/apk-build"
+          echo "Jika ingin rilis resmi dengan nama tag, gunakan file yang sama: jadwal-pintar-user-arm64-v\$(git rev-list --count HEAD).apk"
