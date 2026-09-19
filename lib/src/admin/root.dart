@@ -346,18 +346,14 @@ class _GoogleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primary = Color(0xFF0F7A4A);
-    const primaryDeep = Color(0xFF0B5C38);
+    // Google-official theme: white pill, 1dp #747775 border, dark text, 4-color G.
     return DecoratedBox(
       decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(28),
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFF1A9A61), primaryDeep],
-        ),
+        border: Border.all(color: const Color(0xFF747775), width: 1),
         boxShadow: [
-          BoxShadow(color: primary.withValues(alpha: 0.28), blurRadius: 18, offset: const Offset(0, 10)),
+          BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Material(
@@ -366,85 +362,48 @@ class _GoogleButton extends StatelessWidget {
         child: InkWell(
           onTap: onPressed,
           borderRadius: BorderRadius.circular(28),
-          splashColor: Colors.white.withValues(alpha: 0.12),
-          highlightColor: Colors.white.withValues(alpha: 0.06),
+          splashColor: const Color(0xFF1F1F1F).withValues(alpha: 0.08),
+          highlightColor: const Color(0xFF1F1F1F).withValues(alpha: 0.04),
           child: SizedBox(
             height: 56,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  // G logo on white circle.
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                    child: Center(
-                      child: _GoogleG(size: 20),
-                    ),
+                  Image.asset(
+                    'assets/icon/google_g.png',
+                    width: 20,
+                    height: 20,
+                    errorBuilder: (_, _, _) => const Text('G', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF4285F4))),
                   ),
-                  Container(
-                    width: 1,
-                    height: 26,
-                    margin: const EdgeInsets.symmetric(horizontal: 12),
-                    color: Colors.white.withValues(alpha: 0.32),
-                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Center(
                       child: busy
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2.2, color: Color(0xFF1F1F1F)),
+                            )
                           : const Text(
                               'Masuk dengan Google',
                               style: TextStyle(
                                 fontFamily: 'sans-serif',
                                 fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF1F1F1F),
                                 letterSpacing: 0.1,
                               ),
                             ),
                     ),
                   ),
-                  const Padding(
-                    padding: EdgeInsets.only(right: 10),
-                    child: Icon(Icons.arrow_forward, size: 20, color: Colors.white),
-                  ),
+                  const SizedBox(width: 20),
                 ],
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Minimal Google "G" — 4-color approximation without external asset.
-class _GoogleG extends StatelessWidget {
-  const _GoogleG({required this.size});
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    // Use stack of colored arcs approximation with FontAwesome colors fallback:
-    // Simpler: use Row of letters with distinct colors? Instead draw single G with gradient.
-    // Here we use a centered bold G with Google blue + colored dots simulation via shadow.
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Text(
-          'G',
-          style: TextStyle(
-            fontSize: size,
-            fontWeight: FontWeight.w900,
-            height: 1,
-            foreground: Paint()
-              ..shader = const LinearGradient(
-                colors: [Color(0xFF4285F4), Color(0xFF34A853), Color(0xFFFBBC05), Color(0xFFEA4335)],
-              ).createShader(Rect.fromLTWH(0, 0, 24, 24)),
-          ),
-        ),
-      ],
     );
   }
 }
