@@ -248,3 +248,40 @@ jobs:
             --title "$TAG" \
             --notes "Rilis otomatis CI: APK user + admin (di-sign keystore rilis)." \
           || gh release upload "$TAG" rilis/*.apk --clobber
+
+  # Setiap push ke main -> Release langsung 2 APK tanpa zip (direct .apk download).
+  # Tag stabil latest-main di-overwrite biar link tetap sama, tidak spam tag per SHA.
+  release-main:
+    runs-on: ubuntu-latest
+    needs: [build-user, build-admin]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Unduh kedua APK
+        uses: actions/download-artifact@v4
+        with:
+          path: apks
+
+      - name: Publish prerelease latest-main (direct APK, bukan zip)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="latest-main"
+          SHORT_SHA="${GITHUB_SHA::7}"
+          RUN_ID="${GITHUB_RUN_ID}"
+          mkdir -p rilis
+          cp apks/jadwal-pintar-flutter-user-apk/*.apk "rilis/jadwal-pintar-user-${TAG}.apk"
+          cp apks/jadwal-pintar-flutter-admin-apk/*.apk "rilis/jadwal-pintar-admin-${TAG}.apk"
+          ls -lh rilis
+          # Hapus rilis lama agar file ter-overwrite bersih, lanjut walau belum ada.
+          gh release delete "$TAG" --yes 2>/dev/null || true
+          git push origin ":refs/tags/$TAG" 2>/dev/null || true
+          gh release create "$TAG" rilis/*.apk \
+            --title "Prerelease $TAG — $SHORT_SHA (run $RUN_ID)" \
+            --notes "Build otomatis tiap push main ($SHORT_SHA): APK user + admin terbaru (direct .apk, bukan zip artifact). Link permanen: https://github.com/${{ github.repository }}/releases/tag/$TAG" \
+            --prerelease
+          echo "Selesai: https://github.com/${{ github.repository }}/releases/tag/$TAG"
