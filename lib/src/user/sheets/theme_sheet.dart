@@ -12,30 +12,73 @@ class ThemeSheet extends ConsumerWidget {
 
   Future<void> _pickCustom(BuildContext context, WidgetRef ref) async {
     final controller = TextEditingController(text: '#007AFF');
-    final hex = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Warna custom (hex)'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            hintText: '#007AFF',
-            prefixIcon: FaIcon(FontAwesomeIcons.palette),
+    final theme = ref.read(userThemeProvider);
+    final isGlass = theme.preset == ThemePreset.glass;
+    final isLight = theme.isLight;
+    Future<String?> showPick() {
+      if (isGlass) {
+        return showDialog<String>(
+          context: context,
+          barrierColor: Colors.black.withValues(alpha: isLight ? .18 : .42),
+          builder: (dialogContext) => Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isLight ? const Color(0xF0FFFFFF) : const Color(0xCC1A1D2E),
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: isLight ? const Color(0x1A000000) : const Color(0x33FFFFFF)),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      const Text('Warna custom (hex)', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                      const SizedBox(height: 12),
+                      TextField(controller: controller, decoration: const InputDecoration(hintText: '#007AFF', prefixIcon: FaIcon(FontAwesomeIcons.palette))),
+                      const SizedBox(height: 16),
+                      Row(children: [
+                        Expanded(child: OutlinedButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Batal'))),
+                        const SizedBox(width: 10),
+                        Expanded(child: FilledButton(onPressed: () => Navigator.of(dialogContext).pop(controller.text.trim()), child: const Text('Pakai'))),
+                      ]),
+                    ]),
+                  ),
+                ),
+              ),
+            ),
           ),
+        );
+      }
+      return showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Warna custom (hex)'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: '#007AFF',
+              prefixIcon: FaIcon(FontAwesomeIcons.palette),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(controller.text.trim()),
+              child: const Text('Pakai'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.of(dialogContext).pop(controller.text.trim()),
-            child: const Text('Pakai'),
-          ),
-        ],
-      ),
-    );
+      );
+    }
+
+    final hex = await showPick();
     controller.dispose();
     if (hex == null || hex.isEmpty) return;
     final clean = hex.replaceAll('#', '').trim();
@@ -166,16 +209,28 @@ class _ThemeOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final isGlass = Theme.of(context).scaffoldBackgroundColor == const Color(0xFF0A0E1A) ||
+        Theme.of(context).scaffoldBackgroundColor == const Color(0xFFF4F6FB);
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
+          color: selected
+              ? (isGlass
+                  ? (Theme.of(context).brightness == Brightness.light
+                      ? Colors.white.withValues(alpha: .92)
+                      : Colors.white.withValues(alpha: .14))
+                  : scheme.primaryContainer.withValues(alpha: .55))
+              : Colors.transparent,
           border: Border.all(
-            color: selected ? scheme.primary : scheme.outlineVariant,
+            color: selected ? scheme.primary : (isGlass ? const Color(0x1AFFFFFF) : scheme.outlineVariant),
             width: selected ? 2 : 1,
           ),
+          boxShadow: selected && isGlass
+              ? [BoxShadow(color: scheme.primary.withValues(alpha: .18), blurRadius: 12, offset: const Offset(0, 4))]
+              : null,
         ),
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Column(
@@ -187,16 +242,13 @@ class _ThemeOption extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: isCustom ? null : dot,
-                border: isCustom
-                    ? Border.all(color: scheme.outline)
-                    : null,
+                border: isCustom ? Border.all(color: scheme.outline) : null,
+                boxShadow: selected && !isCustom ? [BoxShadow(color: (dot ?? scheme.primary).withValues(alpha: .32), blurRadius: 10)] : null,
               ),
-              child: isCustom
-                  ? const FaIcon(FontAwesomeIcons.palette, size: 14)
-                  : null,
+              child: isCustom ? const FaIcon(FontAwesomeIcons.palette, size: 14) : null,
             ),
             const SizedBox(height: 6),
-            Text(label, style: Theme.of(context).textTheme.bodySmall),
+            Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: selected ? FontWeight.w700 : null)),
           ],
         ),
       ),

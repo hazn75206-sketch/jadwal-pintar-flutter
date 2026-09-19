@@ -1,41 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+import 'glass_panel.dart';
+
 /// Modal info aplikasi (cermin #infoModal).
 class InfoSheet extends StatelessWidget {
   const InfoSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const FaIcon(FontAwesomeIcons.code, size: 30),
-            const SizedBox(height: 10),
-            Text(
-              'Han Dev',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            const _InfoRow(
-                icon: FontAwesomeIcons.user, text: 'Developer: Han Dev'),
-            const _InfoRow(
-                icon: FontAwesomeIcons.box,
-                text: 'Package: com.jadwalpintar.app'),
-            const _InfoRow(
-                icon: FontAwesomeIcons.tag, text: 'Versi 3.0 - Flutter Edition'),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Selesai'),
-            ),
-          ],
+    return GlassPanel(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const FaIcon(FontAwesomeIcons.code, size: 30),
+              const SizedBox(height: 10),
+              Text(
+                'Han Dev',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 12),
+              const _InfoRow(
+                  icon: FontAwesomeIcons.user, text: 'Developer: Han Dev'),
+              const _InfoRow(
+                  icon: FontAwesomeIcons.box,
+                  text: 'Package: com.jadwalpintar.app'),
+              const _InfoRow(
+                  icon: FontAwesomeIcons.tag, text: 'Versi 3.0 - Flutter Edition'),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Selesai'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -48,37 +52,39 @@ class PrivacySheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const FaIcon(FontAwesomeIcons.shieldHalved, size: 30),
-            const SizedBox(height: 10),
-            Text(
-              'Privasi',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 12),
-            const _InfoRow(
-                icon: FontAwesomeIcons.mobileScreen,
-                text: 'Data jadwal tersimpan di perangkat Anda'),
-            const _InfoRow(
-                icon: FontAwesomeIcons.google,
-                text: 'Cadangan hanya di akun Google Anda sendiri'),
-            const _InfoRow(
-                icon: FontAwesomeIcons.userShield,
-                text: 'Tidak dibagikan ke pihak ketiga mana pun'),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Mengerti'),
-            ),
-          ],
+    return GlassPanel(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const FaIcon(FontAwesomeIcons.shieldHalved, size: 30),
+              const SizedBox(height: 10),
+              Text(
+                'Privasi',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 12),
+              const _InfoRow(
+                  icon: FontAwesomeIcons.mobileScreen,
+                  text: 'Data jadwal tersimpan di perangkat Anda'),
+              const _InfoRow(
+                  icon: FontAwesomeIcons.google,
+                  text: 'Cadangan hanya di akun Google Anda sendiri'),
+              const _InfoRow(
+                  icon: FontAwesomeIcons.userShield,
+                  text: 'Tidak dibagikan ke pihak ketiga mana pun'),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Mengerti'),
+              ),
+            ],
+          ),
         ),
       ),
     );

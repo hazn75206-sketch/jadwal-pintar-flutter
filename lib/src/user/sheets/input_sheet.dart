@@ -5,7 +5,10 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../core/sfx.dart';
 import '../schedule_model.dart';
 import '../schedule_provider.dart';
+import '../theme.dart';
+import '../user_theme_provider.dart';
 import 'glass_panel.dart';
+import 'liquid_glass.dart';
 
 /// Modal input pelajaran (cermin #modal native): dropdown hari custom +
 /// baris mapel dinamis (+ di baris terakhir, x di lainnya).
@@ -181,36 +184,42 @@ class _InputSheetState extends ConsumerState<InputSheet> {
 }
 
 /// Dropdown hari custom (cermin day-dropdown native).
-class _DayDropdown extends StatelessWidget {
+class _DayDropdown extends ConsumerWidget {
   const _DayDropdown({required this.selected, required this.onChanged});
 
   final String selected;
   final ValueChanged<String> onChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: () async {
+        final theme = ref.read(userThemeProvider);
+        final isGlass = theme.preset == ThemePreset.glass;
+        final isLight = theme.isLight;
         final picked = await showModalBottomSheet<String>(
           context: context,
-          builder: (sheetContext) => SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final day in kDays)
-                  ListTile(
-                    leading:
-                        const FaIcon(FontAwesomeIcons.calendarDays),
-                    title: Text(day),
-                    trailing: day == selected
-                        ? const Icon(Icons.check)
-                        : null,
-                    onTap: () => Navigator.of(sheetContext).pop(day),
-                  ),
-              ],
-            ),
-          ),
+          backgroundColor: isGlass ? Colors.transparent : null,
+          barrierColor: isGlass ? Colors.black.withValues(alpha: isLight ? .14 : .30) : null,
+          builder: (sheetContext) {
+            final list = SafeArea(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final day in kDays)
+                    ListTile(
+                      leading: const FaIcon(FontAwesomeIcons.calendarDays),
+                      title: Text(day),
+                      trailing: day == selected ? const Icon(Icons.check) : null,
+                      onTap: () => Navigator.of(sheetContext).pop(day),
+                    ),
+                ],
+              ),
+            );
+            if (!isGlass) return list;
+            return LiquidGlassPanel(isLight: isLight, child: list);
+          },
         );
         if (picked != null) onChanged(picked);
       },

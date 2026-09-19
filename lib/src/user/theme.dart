@@ -80,8 +80,8 @@ _PresetColors _colorsFor(ThemePreset preset, Color custom) {
     case ThemePreset.glass:
       return const _PresetColors(
         primary: Color(0xFF8B5CF6),
-        darkBg: Color(0x26000000),
-        darkCard: Color(0x0FFFFFFF),
+        darkBg: Color(0xFF0A0E1A),
+        darkCard: Color(0x1CFFFFFF),
       );
     case ThemePreset.custom:
       return _PresetColors(
@@ -109,6 +109,119 @@ ThemeData buildUserTheme({
   required Color customColor,
   required bool isLight,
 }) {
+  // Glass preset: liquid glass 100% — light & dark varian berbeda.
+  if (preset == ThemePreset.glass) {
+    if (isLight) {
+      final scheme = ColorScheme.fromSeed(
+        seedColor: const Color(0xFF8B5CF6),
+        brightness: Brightness.light,
+      );
+      return ThemeData(
+        colorScheme: scheme,
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF4F6FB),
+        appBarTheme: const AppBarTheme(
+          centerTitle: false,
+          backgroundColor: Color(0xFFF4F6FB),
+          elevation: 0,
+          scrolledUnderElevation: 0,
+        ),
+        cardTheme: CardThemeData(
+          margin: EdgeInsets.zero,
+          elevation: 0,
+          color: const Color(0x9CFFFFFF),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+            side: const BorderSide(color: Color(0x1A000000)),
+          ),
+        ),
+        dialogTheme: const DialogThemeData(
+          backgroundColor: Color(0xF0FFFFFF),
+          barrierColor: Color(0x33000000),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(24))),
+        ),
+        bottomSheetTheme: const BottomSheetThemeData(
+          backgroundColor: Colors.transparent,
+          modalBackgroundColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white.withValues(alpha: .72),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0x14000000)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Color(0x14000000)),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+        floatingActionButtonTheme: FloatingActionButtonThemeData(
+          backgroundColor: Colors.white.withValues(alpha: .88),
+          foregroundColor: scheme.primary,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        ),
+      );
+    }
+    // dark glass
+    final scheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF8B5CF6),
+      brightness: Brightness.dark,
+      surface: const Color(0x1CFFFFFF),
+    );
+    return ThemeData(
+      colorScheme: scheme,
+      useMaterial3: true,
+      scaffoldBackgroundColor: const Color(0xFF0A0E1A),
+      appBarTheme: const AppBarTheme(
+        centerTitle: false,
+        backgroundColor: Color(0xFF0A0E1A),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+      ),
+      cardTheme: CardThemeData(
+        margin: EdgeInsets.zero,
+        elevation: 0,
+        color: const Color(0x1CFFFFFF),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: const BorderSide(color: Color(0x33FFFFFF)),
+        ),
+      ),
+      dialogTheme: const DialogThemeData(
+        backgroundColor: Color(0xCC1A1D2E),
+        barrierColor: Color(0x66000000),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(24))),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.transparent,
+        modalBackgroundColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: .07),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Color(0x1AFFFFFF)),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: scheme.primary.withValues(alpha: .88),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
+    );
+  }
   final colors = _colorsFor(preset, customColor);
   if (isLight) {
     final scheme = ColorScheme.fromSeed(
