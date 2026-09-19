@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/providers.dart';
@@ -60,6 +61,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _busy = false;
   String? _error;
 
+  @override
+  void initState() {
+    super.initState();
+    // Opsi B: sembunyikan status bar atas saja (wifi/baterai/jam), bottom nav tetap.
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: [SystemUiOverlay.bottom],
+    );
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    super.dispose();
+  }
+
+  @override
+  void deactivate() {
+    // Restore bila LoginScreen hilang karena auth berubah (route pop).
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    super.deactivate();
+  }
+
   Future<void> _login() async {
     setState(() {
       _busy = true;
@@ -101,8 +125,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
           // Abstract decorations — low contrast, non-distracting.
           const _BackgroundDecorations(),
-          // Main content centered, scrollable for small screens.
+          // Main content centered, scrollable for small screens — top SafeArea dimatikan agar status bar tersembunyi tidak sisakan padding kosong.
           SafeArea(
+            top: false,
+            bottom: true,
             child: LayoutBuilder(
               builder: (context, constraints) {
                 return SingleChildScrollView(
