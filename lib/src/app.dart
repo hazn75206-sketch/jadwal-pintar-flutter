@@ -5,24 +5,42 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'admin/theme.dart';
 import 'core/flavor.dart';
+import 'core/system_bars.dart';
 import 'screens/admin_home.dart';
 import 'screens/user_home.dart';
 import 'user/user_theme_provider.dart';
 
 /// Root widget monorepo. Satu codebase, dua flavor via `--flavor` + `--target`.
-class JadwalPintarApp extends ConsumerWidget {
+class JadwalPintarApp extends ConsumerStatefulWidget {
   const JadwalPintarApp({super.key, required this.flavor});
 
   final AppFlavor flavor;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    if (flavor == AppFlavor.admin) {
+  ConsumerState<JadwalPintarApp> createState() => _JadwalPintarAppState();
+}
+
+class _JadwalPintarAppState extends ConsumerState<JadwalPintarApp> {
+  @override
+  void initState() {
+    super.initState();
+    AutoHideBars.init();
+  }
+
+  @override
+  void dispose() {
+    AutoHideBars.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.flavor == AppFlavor.admin) {
       _applySystemBars(
         MediaQuery.platformBrightnessOf(context) == Brightness.light,
       );
       return MaterialApp(
-        title: flavor.title,
+        title: widget.flavor.title,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light(),
         darkTheme: AppTheme.dark(),
@@ -33,7 +51,7 @@ class JadwalPintarApp extends ConsumerWidget {
     final userTheme = ref.watch(userThemeProvider);
     _applySystemBars(userTheme.isLight);
     return MaterialApp(
-      title: flavor.title,
+      title: widget.flavor.title,
       debugShowCheckedModeBanner: false,
       theme: userTheme.themeData,
       home: const UserHomeScreen(),
